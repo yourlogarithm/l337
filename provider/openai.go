@@ -1,0 +1,80 @@
+package provider
+
+import (
+	"context"
+
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
+	"github.com/yourlogarithm/golagno/chat"
+)
+
+type OpenAI struct {
+	model  string
+	client openai.Client
+}
+
+func NewOpenAI(name string, opts ...option.RequestOption) *Model {
+	return &Model{
+		Name:     name,
+		Provider: "openai",
+		Impl:     &OpenAI{model: name, client: openai.NewClient(opts...)},
+	}
+}
+
+func (o *OpenAI) Chat(ctx context.Context, messages []chat.Message) (chat.Response, error) {
+	response := chat.Response{}
+	openaiMessages := make([]openai.ChatCompletionMessageParamUnion, len(messages))
+
+	for _, msg := range messages {
+		var openaiMsg openai.ChatCompletionMessageParamUnion
+		switch msg.Role {
+		case "developer":
+			openaiMsg = openai.DeveloperMessage(msg.Content)
+			openaiMsg.OfDeveloper.Name = openai.String(msg.Name)
+		case "system":
+			openaiMsg = openai.SystemMessage(msg.Content)
+			openaiMsg.OfSystem.Name = openai.String(msg.Name)
+		case "user":
+			openaiMsg = openai.UserMessage(msg.Content)
+			openaiMsg.OfUser.Name = openai.String(msg.Name)
+		case "assistant":
+			openaiMsg = openai.AssistantMessage(msg.Content)
+			openaiMsg.OfAssistant.Name = openai.String(msg.Name)
+		case "tool":
+			openaiMsg = openai.ToolMessage(msg.Content, msg.ToolCallID)
+		case "function":
+			openaiMsg = openai.ChatCompletionMessageParamOfFunction(msg.Content, msg.Name)
+		default:
+			return response, NewUnknownRoleError(msg.Role)
+		}
+	}
+
+	chatCompletion, err := o.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Messages: openaiMessages,
+		Model:    o.model,
+	})
+	if err != nil {
+		return response, err
+	}
+
+	response.ID = chatCompletion.ID
+	response.Created = chatCompletion.Created
+	response.Choices = make([]chat.Choice, len(chatCompletion.Choices))
+	for i, choice := range chatCompletion.Choices {
+		response.Choices[i] = chat.Choice{
+			Content:      choice.Message.Content,
+			Refusal:      choice.Message.Refusal,
+			ToolCalls:    make([]chat.ToolCall, len(choice.Message.ToolCalls)),
+			FinishReason: chat.FinishReason(choice.FinishReason),
+		}
+		for j, toolCall := range choice.Message.ToolCalls {
+			response.Choices[i].ToolCalls[j] = chat.ToolCall{
+				ID:        toolCall.ID,
+				Arguments: toolCall.Function.Arguments,
+				Name:      toolCall.Function.Name,
+			}
+		}
+	}
+
+	return response, nil
+}
