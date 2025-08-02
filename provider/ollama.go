@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -24,30 +25,36 @@ func NewOllama(name string, base *url.URL, http *http.Client) *Model {
 	}
 }
 
-func (o *Ollama) Chat(ctx context.Context, messages []chat.Message) (response chat.Response, err error) {
+func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat.Response, err error) {
 	stream := false
 	req := &api.ChatRequest{
 		Model:    o.model,
-		Messages: make([]api.Message, len(messages)),
+		Messages: make([]api.Message, len(request.Messages)),
 		Stream:   &stream,
+		Tools:    make([]api.Tool, 0, len(request.Tools)),
 	}
-	for i, msg := range messages {
+
+	for i, msg := range request.Messages {
 		req.Messages[i].Role = msg.Role
 		req.Messages[i].Content = msg.Content
 	}
 
-	callback := func(ollamaResp api.ChatResponse) error {
-		slog.Debug("ollama.Chat.Response", "model", o.model, "ollamaResp", ollamaResp)
-		if response.Choices == nil {
-			response.Choices = make([]chat.Choice, 1)
+	for _, tool := range request.Tools {
+		ollamaTool, err := tool.ToOllamaTool()
+		if err != nil {
+			return chat.Response{}, fmt.Errorf("ollama.Chat: %w", err)
 		}
-		choice := &response.Choices[0]
-		choice.Content += ollamaResp.Message.Content
-		choice.FinishReason = chat.FinishReason(ollamaResp.DoneReason)
+		req.Tools = append(req.Tools, ollamaTool)
+	}
+
+	callback := func(ollamaResp api.ChatResponse) error {
+		slog.Debug("ollama.Chat.Response", "model", o.model, "tools", req.Tools, "response", ollamaResp)
+		response.Content.Text += ollamaResp.Message.Content
+		response.Content.FinishReason = chat.FinishReason(ollamaResp.DoneReason)
 		return nil
 	}
 
-	slog.Debug("ollama.Chat", "model", o.model, "messages", messages)
+	slog.Debug("ollama.Chat", "model", o.model, "messages", request.Messages)
 
 	if err = o.client.Chat(ctx, req, callback); err != nil {
 		return chat.Response{}, err

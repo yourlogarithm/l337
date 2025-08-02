@@ -21,11 +21,11 @@ func NewOpenAI(name string, opts ...option.RequestOption) *Model {
 	}
 }
 
-func (o *OpenAI) Chat(ctx context.Context, messages []chat.Message) (chat.Response, error) {
+func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (chat.Response, error) {
 	response := chat.Response{}
-	openaiMessages := make([]openai.ChatCompletionMessageParamUnion, len(messages))
+	openaiMessages := make([]openai.ChatCompletionMessageParamUnion, len(request.Messages))
 
-	for _, msg := range messages {
+	for _, msg := range request.Messages {
 		var openaiMsg openai.ChatCompletionMessageParamUnion
 		switch msg.Role {
 		case "developer":
@@ -59,20 +59,19 @@ func (o *OpenAI) Chat(ctx context.Context, messages []chat.Message) (chat.Respon
 
 	response.ID = chatCompletion.ID
 	response.Created = chatCompletion.Created
-	response.Choices = make([]chat.Choice, len(chatCompletion.Choices))
-	for i, choice := range chatCompletion.Choices {
-		response.Choices[i] = chat.Choice{
-			Content:      choice.Message.Content,
-			Refusal:      choice.Message.Refusal,
-			ToolCalls:    make([]chat.ToolCall, len(choice.Message.ToolCalls)),
-			FinishReason: chat.FinishReason(choice.FinishReason),
-		}
-		for j, toolCall := range choice.Message.ToolCalls {
-			response.Choices[i].ToolCalls[j] = chat.ToolCall{
-				ID:        toolCall.ID,
-				Arguments: toolCall.Function.Arguments,
-				Name:      toolCall.Function.Name,
-			}
+	choice := chatCompletion.Choices[0]
+
+	response.Content = chat.Content{
+		Text:         choice.Message.Content,
+		Refusal:      choice.Message.Refusal,
+		ToolCalls:    make([]chat.ToolCall, len(choice.Message.ToolCalls)),
+		FinishReason: chat.FinishReason(choice.FinishReason),
+	}
+	for j, toolCall := range choice.Message.ToolCalls {
+		response.Content.ToolCalls[j] = chat.ToolCall{
+			ID:        toolCall.ID,
+			Arguments: toolCall.Function.Arguments,
+			Name:      toolCall.Function.Name,
 		}
 	}
 

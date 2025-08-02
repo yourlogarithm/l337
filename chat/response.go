@@ -3,7 +3,7 @@ package chat
 type Response struct {
 	ID      string
 	Created int64
-	Choices []Choice
+	Content Content
 }
 
 type FinishReason string
@@ -15,8 +15,8 @@ const (
 	FinishReasonFunctionCall FinishReason = "content_filter"
 )
 
-type Choice struct {
-	Content      string
+type Content struct {
+	Text         string
 	Refusal      string
 	ToolCalls    []ToolCall
 	FinishReason FinishReason

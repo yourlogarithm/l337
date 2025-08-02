@@ -10,27 +10,37 @@ import (
 	"github.com/yourlogarithm/golagno/agent"
 	"github.com/yourlogarithm/golagno/chat"
 	"github.com/yourlogarithm/golagno/provider"
+	"github.com/yourlogarithm/golagno/tools"
 )
 
+// Returns the sum of a and b
+func add(a int, b int) int {
+	return a + b
+}
+
 func main() {
+
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 
 	base, _ := url.Parse("http://localhost:11434")
 	model := provider.NewOllama(
-		"gemma3:4b",
+		"llama3.2:1b",
 		base,
 		http.DefaultClient,
 	)
+	toolkit := tools.Toolkit{}
+	toolkit.AddTool(add)
 	agent := agent.Agent{
 		Name:         "ExampleAgent",
 		Description:  "An example agent for demonstration purposes.",
 		Instructions: "None at all",
 		Model:        model,
+		Tools:        toolkit,
 	}
 	response, err := agent.Run(context.Background(), []chat.Message{
 		{
 			Role:    "user",
-			Content: "Hello, how are you?",
+			Content: "Add 5 and 6",
 		},
 	})
 	if err != nil {
