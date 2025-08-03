@@ -2,11 +2,6 @@ package tools
 
 type Toolkit []Tool
 
-func (t *Toolkit) AddTool(fn any) error {
-	tool, err := CreateToolFromFunc(fn)
-	if err != nil {
-		return err
-	}
+func (t *Toolkit) AddTool(tool Tool) {
 	*t = append(*t, tool)
-	return nil
 }

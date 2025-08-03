@@ -14,8 +14,16 @@ import (
 )
 
 // Returns the sum of a and b
-func add(a int, b int) int {
-	return a + b
+func add(ctx context.Context, params tools.Params) (string, error) {
+	a, err := tools.GetParameter[int](params, "a")
+	if err != nil {
+		return "", err
+	}
+	b, err := tools.GetParameter[int](params, "b")
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%d", a+b), nil
 }
 
 func main() {
@@ -29,7 +37,12 @@ func main() {
 		http.DefaultClient,
 	)
 	toolkit := tools.Toolkit{}
-	toolkit.AddTool(add)
+
+	tool := tools.NewTool("add", "Adds two numbers", add)
+	tools.AddParameterFromType[int](&tool, "a")
+	tools.AddParameterFromType[int](&tool, "b")
+
+	toolkit.AddTool(tool)
 	agent := agent.Agent{
 		Name:         "ExampleAgent",
 		Description:  "An example agent for demonstration purposes.",
@@ -40,7 +53,7 @@ func main() {
 	response, err := agent.Run(context.Background(), []chat.Message{
 		{
 			Role:    "user",
-			Content: "Add 5 and 6",
+			Content: "Perform the following operations: 5 + 3, 23 + 42, 66 + 33",
 		},
 	})
 	if err != nil {
