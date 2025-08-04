@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/yourlogarithm/golagno/chat"
@@ -13,10 +14,13 @@ import (
 )
 
 type Agent struct {
-	Name         string
-	Role         string
-	Description  string
-	Instructions string
+	Name        string
+	Role        string
+	Description string
+
+	Instructions   string
+	Goal           string
+	ExpectedOutput string
 
 	Model *provider.Model
 
@@ -25,13 +29,43 @@ type Agent struct {
 	RetryOptions *retry.Options
 }
 
+func (a *Agent) computeSystemMessage() chat.Message {
+	var sb strings.Builder
+
+	appendSystemString := func(s string, tag string) {
+		if s != "" {
+			if sb.Len() > 0 {
+				sb.WriteRune('\n')
+			}
+			if tag != "" {
+				sb.WriteString("<" + tag + ">\n")
+			}
+			sb.WriteString(s)
+			if tag != "" {
+				sb.WriteRune('\n')
+				sb.WriteString("</" + tag + ">")
+			}
+		}
+	}
+
+	appendSystemString(a.Description, "")
+	appendSystemString(a.Goal, "goal")
+	appendSystemString(a.Instructions, "instructions")
+	appendSystemString(a.ExpectedOutput, "expected_output")
+
+	return chat.Message{
+		Role:    "system",
+		Content: sb.String(),
+	}
+}
+
 func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse run.Response, err error) {
 	if a.RetryOptions == nil {
 		a.RetryOptions = retry.Default()
 	}
 
 	// Generate system message
-	// ...
+	runResponse.Messages = append(runResponse.Messages, a.computeSystemMessage())
 
 	// Add user messages
 	runResponse.Messages = append(runResponse.Messages, messages...)
