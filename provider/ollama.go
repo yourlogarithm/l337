@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/ollama/ollama/api"
 	"github.com/yourlogarithm/golagno/chat"
@@ -49,8 +50,15 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 
 	callback := func(ollamaResp api.ChatResponse) error {
 		slog.Debug("ollama.Chat.Response", "model", o.model, "tools", req.Tools, "response", ollamaResp)
-		response.Content.Text += ollamaResp.Message.Content
-		response.Content.FinishReason = chat.FinishReason(ollamaResp.DoneReason)
+		response.FinishReason = chat.FinishReason(ollamaResp.DoneReason)
+		response.Content += ollamaResp.Message.Content
+		for _, toolCall := range ollamaResp.Message.ToolCalls {
+			response.ToolCalls = append(response.ToolCalls, chat.ToolCall{
+				ID:        strconv.Itoa(toolCall.Function.Index),
+				Arguments: toolCall.Function.Arguments,
+				Name:      toolCall.Function.Name,
+			})
+		}
 		return nil
 	}
 

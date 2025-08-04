@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -41,7 +42,8 @@ func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (chat.Response
 			openaiMsg = openai.AssistantMessage(msg.Content)
 			openaiMsg.OfAssistant.Name = openai.String(msg.Name)
 		case "tool":
-			openaiMsg = openai.ToolMessage(msg.Content, msg.ToolCallID)
+			// openaiMsg = openai.ToolMessage(msg.Content, msg.ToolCallID)
+			return response, fmt.Errorf("tool message not implemented yet")
 		case "function":
 			openaiMsg = openai.ChatCompletionMessageParamOfFunction(msg.Content, msg.Name)
 		default:
@@ -61,17 +63,19 @@ func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (chat.Response
 	response.Created = chatCompletion.Created
 	choice := chatCompletion.Choices[0]
 
-	response.Content = chat.Content{
-		Text:         choice.Message.Content,
-		Refusal:      choice.Message.Refusal,
-		ToolCalls:    make([]chat.ToolCall, len(choice.Message.ToolCalls)),
-		FinishReason: chat.FinishReason(choice.FinishReason),
-	}
+	response.Content = choice.Message.Content
+	response.Refusal = choice.Message.Refusal
+	response.ToolCalls = make([]chat.ToolCall, len(choice.Message.ToolCalls))
+	response.FinishReason = chat.FinishReason(choice.FinishReason)
+
 	for j, toolCall := range choice.Message.ToolCalls {
-		response.Content.ToolCalls[j] = chat.ToolCall{
-			ID:        toolCall.ID,
-			Arguments: toolCall.Function.Arguments,
-			Name:      toolCall.Function.Name,
+		if len(toolCall.Function.Arguments) > 0 {
+			return response, fmt.Errorf("OpenAI Chat: tool call arguments are not supported yet")
+		}
+		response.ToolCalls[j] = chat.ToolCall{
+			ID: toolCall.ID,
+			// Arguments: toolCall.Function.Arguments,
+			Name: toolCall.Function.Name,
 		}
 	}
 
