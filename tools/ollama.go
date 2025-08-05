@@ -1,13 +1,11 @@
 package tools
 
 import (
-	"fmt"
-
 	"github.com/invopop/jsonschema"
 	"github.com/ollama/ollama/api"
 )
 
-func (t *Tool) ToOllamaTool() (api.Tool, error) {
+func (t *Tool) ToOllamaTool() api.Tool {
 	defsMap := make(map[jsonschema.ID]jsonschema.Schema)
 
 	parameters := struct {
@@ -33,34 +31,20 @@ func (t *Tool) ToOllamaTool() (api.Tool, error) {
 		Enum        []any            `json:"enum,omitempty"`
 	}, len(t.Parameters))
 
-	var updateDefs func(e *Element)
-	updateDefs = func(e *Element) {
-		if e.Schema != nil {
-			defsMap[e.Schema.ID] = *e.Schema
-		}
-		if e.Nested != nil {
-			updateDefs(e.Nested)
-		}
-	}
-
-	for _, param := range t.Parameters {
-		parameters.Required = append(parameters.Required, param.Name)
+	for name, schema := range t.Parameters {
+		parameters.Required = append(parameters.Required, name)
 		ollamaParam := struct {
 			Type        api.PropertyType "json:\"type\""
 			Items       any              "json:\"items,omitempty\""
 			Description string           "json:\"description\""
 			Enum        []any            "json:\"enum,omitempty\""
 		}{
-			Type: []string{param.Element.Type},
+			Type:        []string{schema.Type},
+			Items:       schema.Items,
+			Description: schema.Description,
+			Enum:        schema.Enum,
 		}
-		if param.Element.Nested != nil {
-			ollamaParam.Items = param.Element.Nested.Type
-			if param.Element.Nested.Nested != nil {
-				return api.Tool{}, fmt.Errorf("ToOllamaTool: Ollama api does not support double nested 2D arrays or maps")
-			}
-		}
-		updateDefs(&param.Element)
-		parameters.Properties[param.Name] = ollamaParam
+		parameters.Properties[name] = ollamaParam
 	}
 
 	defs := make([]jsonschema.Schema, 0, len(defsMap))
@@ -76,5 +60,5 @@ func (t *Tool) ToOllamaTool() (api.Tool, error) {
 			Description: t.Description,
 			Parameters:  parameters,
 		},
-	}, nil
+	}
 }

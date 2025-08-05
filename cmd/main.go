@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"net/http"
-	"net/url"
+	"os"
 
+	"github.com/openai/openai-go/option"
 	"github.com/yourlogarithm/golagno/agent"
 	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/provider"
+	"github.com/yourlogarithm/golagno/provider/openai"
 	"github.com/yourlogarithm/golagno/tools"
 )
 
@@ -27,20 +26,16 @@ func add(ctx context.Context, params tools.Params) (string, error) {
 }
 
 func main() {
-
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-
-	base, _ := url.Parse("http://localhost:11434")
-	model := provider.NewOllama(
-		"llama3.2:1b",
-		base,
-		http.DefaultClient,
+	model := openai.NewOpenAI(
+		"Qwen/QwQ-32B",
+		option.WithBaseURL(os.Getenv("BASE_URL")),
+		option.WithAPIKey(os.Getenv("API_KEY")),
 	)
 	toolkit := tools.Toolkit{}
 
 	tool := tools.NewTool("add", "Adds two numbers", add)
-	tools.AddParameterFromType[int](&tool, "a")
-	tools.AddParameterFromType[int](&tool, "b")
+	tools.AddParameterFromType[int](&tool, "a", "The first number to add")
+	tools.AddParameterFromType[int](&tool, "b", "The second number to add")
 
 	toolkit.AddTool(tool)
 	agent := agent.Agent{
@@ -59,5 +54,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Agent Response:", response)
+	fmt.Println("Agent Response:", response.Content())
 }

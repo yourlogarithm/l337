@@ -7,11 +7,14 @@ import (
 	"sync"
 
 	"github.com/yourlogarithm/golagno/chat"
+	"github.com/yourlogarithm/golagno/logging"
 	"github.com/yourlogarithm/golagno/provider"
 	"github.com/yourlogarithm/golagno/retry"
 	"github.com/yourlogarithm/golagno/run"
 	"github.com/yourlogarithm/golagno/tools"
 )
+
+var logger = logging.SetupLogger("agent")
 
 type Agent struct {
 	Name        string
@@ -81,6 +84,7 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 			Messages: runResponse.Messages,
 			Tools:    tools,
 		}
+		logger.Debug("agent.run.request", "agent", a.Name, "request", req)
 		if err = a.RetryOptions.Execute(func() error {
 			response, err := a.Model.Impl.Chat(ctx, &req)
 			if err != nil {
@@ -91,8 +95,9 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 		}); err != nil {
 			return runResponse, err
 		}
+		logger.Debug("agent.run.response", "agent", a.Name, "response", chatResponse)
 		msg := chat.Message{
-			Role:      "assistant",
+			Role:      chat.RoleAssistant.String(),
 			Content:   chatResponse.Content,
 			ToolCalls: chatResponse.ToolCalls,
 		}
@@ -133,10 +138,10 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 				if !exists {
 					return runResponse, fmt.Errorf("tool call result not found for ID: %s", id)
 				}
-				runResponse.Messages = append(runResponse.Messages, chat.Message{
-					Role:    "tool",
+				runResponse.AddMessage(chat.Message{
+					Role:    chat.RoleTool.String(),
 					Content: result.Content,
-					Name:    result.ToolCall.Name,
+					Name:    result.ToolCall.ID,
 				})
 			}
 		} else if chatResponse.FinishReason == chat.FinishReasonStop {

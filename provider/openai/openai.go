@@ -1,30 +1,38 @@
-package provider
+package openai
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/yourlogarithm/golagno/chat"
+	"github.com/yourlogarithm/golagno/logging"
+	"github.com/yourlogarithm/golagno/provider"
 )
+
+var logger = logging.SetupLogger("provider.openai")
 
 type OpenAI struct {
 	model  string
 	client openai.Client
 }
 
-func NewOpenAI(name string, opts ...option.RequestOption) *Model {
-	return &Model{
+func NewOpenAI(name string, opts ...option.RequestOption) *provider.Model {
+	return &provider.Model{
 		Name:     name,
 		Provider: "openai",
 		Impl:     &OpenAI{model: name, client: openai.NewClient(opts...)},
 	}
 }
 
-func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (chat.Response, error) {
-	response := chat.Response{}
-	openaiMessages := make([]openai.ChatCompletionMessageParamUnion, len(request.Messages))
+func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (response chat.Response, err error) {
+	params := openai.ChatCompletionNewParams{
+		Messages: make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
+		Model:    o.model,
+		Tools:    make([]openai.ChatCompletionToolParam, 0, len(request.Tools)),
+	}
 
 	for _, msg := range request.Messages {
 		var openaiMsg openai.ChatCompletionMessageParamUnion
@@ -42,22 +50,25 @@ func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (chat.Response
 			openaiMsg = openai.AssistantMessage(msg.Content)
 			openaiMsg.OfAssistant.Name = openai.String(msg.Name)
 		case "tool":
-			// openaiMsg = openai.ToolMessage(msg.Content, msg.ToolCallID)
-			return response, fmt.Errorf("tool message not implemented yet")
+			openaiMsg = openai.ToolMessage(msg.Content, msg.Name)
 		case "function":
 			openaiMsg = openai.ChatCompletionMessageParamOfFunction(msg.Content, msg.Name)
 		default:
-			return response, NewUnknownRoleError(msg.Role)
+			return response, provider.NewUnknownRoleError(msg.Role)
 		}
+		params.Messages = append(params.Messages, openaiMsg)
 	}
 
-	chatCompletion, err := o.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
-		Messages: openaiMessages,
-		Model:    o.model,
-	})
+	for _, tool := range request.Tools {
+		params.Tools = append(params.Tools, tool.ToOpenAITool())
+	}
+
+	logger.Debug("chat.request", "model", o.model, "messages", request.Messages, "tools", request.Tools)
+	chatCompletion, err := o.client.Chat.Completions.New(ctx, params)
 	if err != nil {
 		return response, err
 	}
+	logger.Debug("chat.response", "model", o.model, "response", chatCompletion)
 
 	response.ID = chatCompletion.ID
 	response.Created = chatCompletion.Created
@@ -69,13 +80,15 @@ func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (chat.Response
 	response.FinishReason = chat.FinishReason(choice.FinishReason)
 
 	for j, toolCall := range choice.Message.ToolCalls {
-		if len(toolCall.Function.Arguments) > 0 {
-			return response, fmt.Errorf("OpenAI Chat: tool call arguments are not supported yet")
+		arguments := make(map[string]any)
+		if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &arguments); err != nil {
+			return response, fmt.Errorf("OpenAI Chat: failed to unmarshal tool call arguments: %w", err)
 		}
+
 		response.ToolCalls[j] = chat.ToolCall{
-			ID: toolCall.ID,
-			// Arguments: toolCall.Function.Arguments,
-			Name: toolCall.Function.Name,
+			ID:        toolCall.ID,
+			Arguments: arguments,
+			Name:      toolCall.Function.Name,
 		}
 	}
 

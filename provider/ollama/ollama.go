@@ -1,25 +1,27 @@
-package provider
+package ollama
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/ollama/ollama/api"
 	"github.com/yourlogarithm/golagno/chat"
+	"github.com/yourlogarithm/golagno/logging"
+	"github.com/yourlogarithm/golagno/provider"
 )
+
+var logger = logging.SetupLogger("provider.ollama")
 
 type Ollama struct {
 	model  string
 	client *api.Client
 }
 
-func NewOllama(name string, base *url.URL, http *http.Client) *Model {
+func NewOllama(name string, base *url.URL, http *http.Client) *provider.Model {
 	client := api.NewClient(base, http)
-	return &Model{
+	return &provider.Model{
 		Name:     name,
 		Provider: "ollama",
 		Impl:     &Ollama{model: name, client: client},
@@ -41,15 +43,12 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 	}
 
 	for _, tool := range request.Tools {
-		ollamaTool, err := tool.ToOllamaTool()
-		if err != nil {
-			return chat.Response{}, fmt.Errorf("ollama.Chat: %w", err)
-		}
+		ollamaTool := tool.ToOllamaTool()
 		req.Tools = append(req.Tools, ollamaTool)
 	}
 
 	callback := func(ollamaResp api.ChatResponse) error {
-		slog.Debug("ollama.Chat.Response", "model", o.model, "tools", req.Tools, "response", ollamaResp)
+		logger.Debug("chat.response", "model", o.model, "response", ollamaResp)
 		response.FinishReason = chat.FinishReason(ollamaResp.DoneReason)
 		response.Content += ollamaResp.Message.Content
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
@@ -62,7 +61,7 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 		return nil
 	}
 
-	slog.Debug("ollama.Chat", "model", o.model, "messages", request.Messages)
+	logger.Debug("chat.request", "model", o.model, "messages", request.Messages, "tools", request.Tools)
 
 	if err = o.client.Chat(ctx, req, callback); err != nil {
 		return chat.Response{}, err

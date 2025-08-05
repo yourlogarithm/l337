@@ -2,14 +2,15 @@ package tools
 
 import (
 	"context"
-	"reflect"
+
+	"github.com/invopop/jsonschema"
 )
 
 type Tool struct {
 	Callable    ToolCallable
 	Name        string
 	Description string
-	Parameters  []Parameter
+	Parameters  map[string]jsonschema.Schema
 }
 
 type ToolCallable func(ctx context.Context, toolParams Params) (string, error)
@@ -19,22 +20,15 @@ func NewTool(name, description string, callable ToolCallable) Tool {
 		Name:        name,
 		Description: description,
 		Callable:    callable,
+		Parameters:  make(map[string]jsonschema.Schema),
 	}
 }
 
-func (t *Tool) AddParameter(p Parameter) {
-	t.Parameters = append(t.Parameters, p)
-}
-
-func AddParameterFromType[T any](tool *Tool, name string) error {
+func AddParameterFromType[T any](tool *Tool, name string, description string) {
 	var zero T
-	element, err := getElement(reflect.TypeOf(zero))
-	if err != nil {
-		return err
+	schema := jsonschema.Reflect(zero)
+	if description != "" {
+		schema.Description = description
 	}
-	tool.Parameters = append(tool.Parameters, Parameter{
-		Name:    name,
-		Element: element,
-	})
-	return nil
+	tool.Parameters[name] = *schema
 }
