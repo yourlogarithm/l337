@@ -19,13 +19,17 @@ type Ollama struct {
 	client *api.Client
 }
 
-func NewOllama(name string, base *url.URL, http *http.Client) *provider.Model {
-	client := api.NewClient(base, http)
+func NewOllama(name string, baseUrl string, http *http.Client) (*provider.Model, error) {
+	baseUrlParsed, err := url.Parse(baseUrl)
+	if err != nil {
+		return nil, err
+	}
+	client := api.NewClient(baseUrlParsed, http)
 	return &provider.Model{
 		Name:     name,
 		Provider: "ollama",
 		Impl:     &Ollama{model: name, client: client},
-	}
+	}, nil
 }
 
 func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat.Response, err error) {
@@ -39,7 +43,27 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 
 	for i, msg := range request.Messages {
 		req.Messages[i].Role = msg.Role
+		if msg.Role == chat.RoleTool.String() {
+			req.Messages[i].ToolName = msg.Name
+		}
 		req.Messages[i].Content = msg.Content
+		if len(msg.ToolCalls) > 0 {
+			req.Messages[i].ToolCalls = make([]api.ToolCall, len(msg.ToolCalls))
+			toolCalls := req.Messages[i].ToolCalls
+			for j, toolCall := range msg.ToolCalls {
+				id_int, err := strconv.Atoi(toolCall.ID)
+				if err != nil {
+					id_int = j
+				}
+				toolCalls[j] = api.ToolCall{
+					Function: api.ToolCallFunction{
+						Name:      toolCall.Name,
+						Arguments: toolCall.Arguments,
+						Index:     id_int,
+					},
+				}
+			}
+		}
 	}
 
 	for _, tool := range request.Tools {

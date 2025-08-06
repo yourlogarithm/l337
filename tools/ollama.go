@@ -1,13 +1,10 @@
 package tools
 
 import (
-	"github.com/invopop/jsonschema"
 	"github.com/ollama/ollama/api"
 )
 
 func (t *Tool) ToOllamaTool() api.Tool {
-	defsMap := make(map[jsonschema.ID]jsonschema.Schema)
-
 	parameters := struct {
 		Type       string   "json:\"type\""
 		Defs       any      "json:\"$defs,omitempty\""
@@ -21,7 +18,7 @@ func (t *Tool) ToOllamaTool() api.Tool {
 		} "json:\"properties\""
 	}{
 		Type:     "object",
-		Required: make([]string, 0, len(t.Parameters)),
+		Required: t.Required,
 	}
 
 	parameters.Properties = make(map[string]struct {
@@ -32,7 +29,6 @@ func (t *Tool) ToOllamaTool() api.Tool {
 	}, len(t.Parameters))
 
 	for name, schema := range t.Parameters {
-		parameters.Required = append(parameters.Required, name)
 		ollamaParam := struct {
 			Type        api.PropertyType "json:\"type\""
 			Items       any              "json:\"items,omitempty\""
@@ -46,12 +42,6 @@ func (t *Tool) ToOllamaTool() api.Tool {
 		}
 		parameters.Properties[name] = ollamaParam
 	}
-
-	defs := make([]jsonschema.Schema, 0, len(defsMap))
-	for _, schema := range defsMap {
-		defs = append(defs, schema)
-	}
-	parameters.Defs = defs
 
 	return api.Tool{
 		Type: "function",

@@ -15,13 +15,7 @@ type Parameter struct {
 	Schema      jsonschema.Schema
 }
 
-func GetParameter[T any](params Params, name string) (T, error) {
-	var zero T
-	value, exists := params[name]
-	if !exists {
-		return zero, fmt.Errorf("parameter `%s` not found", name)
-	}
-
+func safeCast[T any](name string, zero T, value any) (T, error) {
 	if v, ok := value.(T); ok {
 		return v, nil
 	}
@@ -43,6 +37,24 @@ func GetParameter[T any](params Params, name string) (T, error) {
 	}
 
 	return zero, fmt.Errorf("parameter `%s` expected `%T` but got `%T`", name, zero, value)
+}
+
+func GetParameter[T any](params Params, name string) (T, error) {
+	var zero T
+	value, exists := params[name]
+	if exists {
+		return safeCast(name, zero, value)
+	}
+	return zero, fmt.Errorf("parameter `%s` not found", name)
+}
+
+func GetParameterOptional[T any](params Params, name string) (T, error) {
+	var zero T
+	value, exists := params[name]
+	if exists {
+		return safeCast(name, zero, value)
+	}
+	return zero, nil
 }
 
 func isNumericKind(kind reflect.Kind) bool {
