@@ -6,7 +6,7 @@ import (
 	"github.com/invopop/jsonschema"
 	"github.com/ollama/ollama/api"
 	"github.com/stretchr/testify/assert"
-	"github.com/yourlogarithm/golagno/tools"
+	"github.com/yourlogarithm/l337/tools"
 )
 
 func TestToOllamaTool_BasicDataTypes(t *testing.T) {

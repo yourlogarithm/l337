@@ -16,7 +16,7 @@ func parseLogLevel(s string) slog.Level {
 }
 
 func SetupLogger(p string) *slog.Logger {
-	level := os.Getenv("GOLAGNO_LOG_LEVEL")
+	level := os.Getenv("L337_LOG_LEVEL")
 	if level == "" {
 		level = "WARN"
 	}

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/yourlogarithm/golagno/agentic"
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/run"
+	"github.com/yourlogarithm/l337/agentic"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/run"
 )
 
 func (t *Team) Run(ctx context.Context, messages []chat.Message) (run.Response, error) {

@@ -7,9 +7,9 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/logging"
-	"github.com/yourlogarithm/golagno/provider"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/logging"
+	"github.com/yourlogarithm/l337/provider"
 )
 
 var logger = logging.SetupLogger("provider.openai")

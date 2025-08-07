@@ -1,8 +1,8 @@
 package team
 
 import (
-	"github.com/yourlogarithm/golagno/agentic"
-	"github.com/yourlogarithm/golagno/logging"
+	"github.com/yourlogarithm/l337/agentic"
+	"github.com/yourlogarithm/l337/logging"
 )
 
 var logger = logging.SetupLogger("team")

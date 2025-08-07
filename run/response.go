@@ -1,6 +1,6 @@
 package run
 
-import "github.com/yourlogarithm/golagno/chat"
+import "github.com/yourlogarithm/l337/chat"
 
 type Response struct {
 	Messages []chat.Message

@@ -3,8 +3,8 @@ package agentic
 import (
 	"context"
 
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/run"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/run"
 )
 
 type Member interface {

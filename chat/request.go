@@ -1,6 +1,6 @@
 package chat
 
-import "github.com/yourlogarithm/golagno/tools"
+import "github.com/yourlogarithm/l337/tools"
 
 type Request struct {
 	Messages []Message

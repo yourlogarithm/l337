@@ -3,9 +3,9 @@ package agent
 import (
 	"context"
 
-	"github.com/yourlogarithm/golagno/agentic"
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/run"
+	"github.com/yourlogarithm/l337/agentic"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/run"
 )
 
 func (a *Agent) Run(ctx context.Context, messages []chat.Message) (run.Response, error) {

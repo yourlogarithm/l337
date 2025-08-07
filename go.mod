@@ -1,4 +1,4 @@
-module github.com/yourlogarithm/golagno
+module github.com/yourlogarithm/l337
 
 go 1.24.5
 

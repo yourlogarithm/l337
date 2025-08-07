@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/yourlogarithm/golagno/chat"
+	"github.com/yourlogarithm/l337/chat"
 )
 
 type Model struct {

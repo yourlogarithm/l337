@@ -3,8 +3,8 @@ package team
 import (
 	"context"
 
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/tools"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/tools"
 )
 
 func (t *Team) generateRouteTool() tools.Tool {

@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/yourlogarithm/golagno/agentic"
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/tools"
+	"github.com/yourlogarithm/l337/agentic"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/tools"
 )
 
 func (t *Team) generateCollaborateTool() tools.Tool {

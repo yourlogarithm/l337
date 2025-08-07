@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/retry"
-	"github.com/yourlogarithm/golagno/run"
-	"github.com/yourlogarithm/golagno/tools"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/retry"
+	"github.com/yourlogarithm/l337/run"
+	"github.com/yourlogarithm/l337/tools"
 )
 
 func Run(ctx context.Context, messages []chat.Message, options *Options, logger *slog.Logger) (runResponse run.Response, err error) {

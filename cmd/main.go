@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/yourlogarithm/golagno/agent"
-	"github.com/yourlogarithm/golagno/agentic"
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/provider"
-	"github.com/yourlogarithm/golagno/provider/ollama"
-	"github.com/yourlogarithm/golagno/team"
-	"github.com/yourlogarithm/golagno/tools"
+	"github.com/yourlogarithm/l337/agent"
+	"github.com/yourlogarithm/l337/agentic"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/provider/ollama"
+	"github.com/yourlogarithm/l337/team"
+	"github.com/yourlogarithm/l337/tools"
 )
 
 // Returns the sum of a and b

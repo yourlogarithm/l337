@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/yourlogarithm/golagno/provider"
-	"github.com/yourlogarithm/golagno/retry"
-	"github.com/yourlogarithm/golagno/tools"
+	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/retry"
+	"github.com/yourlogarithm/l337/tools"
 )
 
 type Options struct {

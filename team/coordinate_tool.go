@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/yourlogarithm/golagno/chat"
-	"github.com/yourlogarithm/golagno/tools"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/tools"
 )
 
 func (t *Team) generateCoordinateTool() tools.Tool {
