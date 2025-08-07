@@ -20,7 +20,7 @@ type Ollama struct {
 	client *api.Client
 }
 
-func NewOllama(name string, baseUrl string, http *http.Client) (*provider.Model, error) {
+func NewModel(name string, baseUrl string, http *http.Client) (*provider.Model, error) {
 	baseUrlParsed, err := url.Parse(baseUrl)
 	if err != nil {
 		return nil, err

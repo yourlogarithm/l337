@@ -24,6 +24,11 @@ func (t *Team) computeSystemMessage() (string, error) {
 		sb.WriteString("   - Name: ")
 		sb.WriteString(options.Name)
 		sb.WriteString("\n")
+		if options.Role != "" {
+			sb.WriteString("   - Role: ")
+			sb.WriteString(options.Role)
+			sb.WriteString("\n")
+		}
 
 		if len(options.Tools) > 0 {
 			sb.WriteString("   - Member tools:\n")

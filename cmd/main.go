@@ -202,7 +202,7 @@ func main() {
 
 	client, logger := newLoggingHTTPClient()
 
-	model := openai.NewOpenAI(
+	model := openai.NewModel(
 		"Qwen/QwQ-32B",
 		option.WithBaseURL(os.Getenv("BASE_URL")),
 		option.WithAPIKey(os.Getenv("API_KEY")),

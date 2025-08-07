@@ -20,7 +20,7 @@ type OpenAI struct {
 	client openai.Client
 }
 
-func NewOpenAI(name string, opts ...option.RequestOption) *provider.Model {
+func NewModel(name string, opts ...option.RequestOption) *provider.Model {
 	return &provider.Model{
 		Name:     name,
 		Provider: "openai",

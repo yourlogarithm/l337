@@ -1,6 +1,8 @@
 package team
 
 import (
+	"fmt"
+
 	"github.com/yourlogarithm/l337/agentic"
 	"github.com/yourlogarithm/l337/internal/logging"
 )
@@ -26,6 +28,10 @@ func (t *Team) initialize() error {
 		return nil
 	}
 
+	if t.Mode == "" {
+		t.Mode = ModeCoordinate
+	}
+
 	switch t.Mode {
 	case ModeCollaborate:
 		t.Tools.AddTool(t.generateCollaborateTool())
@@ -33,6 +39,8 @@ func (t *Team) initialize() error {
 		t.Tools.AddTool(t.generateCoordinateTool())
 	case ModeRoute:
 		t.Tools.AddTool(t.generateRouteTool())
+	default:
+		return fmt.Errorf("invalid team mode: %s", t.Mode)
 	}
 
 	t.initialized = true
