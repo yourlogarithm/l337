@@ -37,30 +37,30 @@ func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (response chat
 	for _, msg := range request.Messages {
 		var openaiMsg openai.ChatCompletionMessageParamUnion
 		switch msg.Role {
-		case "developer":
+		case chat.RoleDeveloper:
 			openaiMsg = openai.DeveloperMessage(msg.Content)
 			openaiMsg.OfDeveloper.Name = openai.String(msg.Name)
-		case "system":
+		case chat.RoleSystem:
 			openaiMsg = openai.SystemMessage(msg.Content)
 			openaiMsg.OfSystem.Name = openai.String(msg.Name)
-		case "user":
+		case chat.RoleUser:
 			openaiMsg = openai.UserMessage(msg.Content)
 			openaiMsg.OfUser.Name = openai.String(msg.Name)
-		case "assistant":
+		case chat.RoleAssistant:
 			openaiMsg = openai.AssistantMessage(msg.Content)
 			openaiMsg.OfAssistant.Name = openai.String(msg.Name)
-		case "tool":
+		case chat.RoleTool:
 			openaiMsg = openai.ToolMessage(msg.Content, msg.Name)
-		case "function":
+		case chat.RoleFunction:
 			openaiMsg = openai.ChatCompletionMessageParamOfFunction(msg.Content, msg.Name)
 		default:
-			return response, provider.NewUnknownRoleError(msg.Role)
+			return response, provider.NewUnknownRoleError(msg.Role.String())
 		}
 		params.Messages = append(params.Messages, openaiMsg)
 	}
 
-	for _, tool := range request.Tools {
-		params.Tools = append(params.Tools, tool.ToOpenAITool())
+	for i := range request.Tools {
+		params.Tools = append(params.Tools, convertTool(&request.Tools[i]))
 	}
 
 	logger.Debug("chat.request", "model", o.model, "messages", request.Messages, "tools", request.Tools)

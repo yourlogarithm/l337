@@ -12,10 +12,6 @@ type Tool struct {
 	Description string
 	Parameters  map[string]jsonschema.Schema
 	Required    []string
-
-	// ModifiesRunResponse indicates if this tool modifies the RunResponse during `.Run()`
-	// If so *RunResponse will be injected into `toolParams` for use.
-	ModifiesRunResponse bool
 }
 
 type ToolCallable func(ctx context.Context, toolParams Params) (string, error)

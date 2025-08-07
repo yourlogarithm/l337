@@ -11,7 +11,7 @@ import (
 func (a *Agent) Run(ctx context.Context, messages []chat.Message) (run.Response, error) {
 	newMessages := []chat.Message{
 		{
-			Role:    chat.RoleSystem.String(),
+			Role:    chat.RoleSystem,
 			Content: a.Options.ComputeSystemMessage(),
 		},
 	}

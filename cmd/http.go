@@ -16,10 +16,11 @@ type LoggingRoundTripper struct {
 }
 
 type LoggedRequest struct {
-	Method string         `json:"method"`
-	URL    string         `json:"url"`
-	Body   map[string]any `json:"body"`
-	Header http.Header    `json:"header"`
+	Method   string         `json:"method"`
+	URL      string         `json:"url"`
+	Body     map[string]any `json:"body"`
+	Header   http.Header    `json:"header"`
+	RespBody map[string]any `json:"respBody"`
 }
 
 func (lrt *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -36,16 +37,31 @@ func (lrt *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 		}
 	}
 
+	resp, err := lrt.transport.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
+
+	respBody := make(map[string]any)
+	if resp != nil && resp.Body != nil {
+		respCopy, _ := io.ReadAll(resp.Body)
+		if err := json.Unmarshal(respCopy, &respBody); err != nil {
+			respBody = map[string]any{"error": "invalid JSON response"}
+		}
+		resp.Body = io.NopCloser(bytes.NewBuffer(respCopy))
+	}
+
 	lrt.mu.Lock()
 	lrt.logs = append(lrt.logs, LoggedRequest{
-		Method: req.Method,
-		URL:    req.URL.String(),
-		Body:   parsedBody,
-		Header: req.Header,
+		Method:   req.Method,
+		URL:      req.URL.String(),
+		Body:     parsedBody,
+		Header:   req.Header,
+		RespBody: respBody,
 	})
 	lrt.mu.Unlock()
 
-	return lrt.transport.RoundTrip(req)
+	return resp, nil
 }
 
 func (lrt *LoggingRoundTripper) SaveToFile(path string) error {

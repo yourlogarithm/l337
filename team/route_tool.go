@@ -28,7 +28,7 @@ func (t *Team) generateRouteTool() tools.Tool {
 
 		messages := []chat.Message{
 			{
-				Role:    chat.RoleUser.String(),
+				Role:    chat.RoleUser,
 				Content: expectedOutput,
 			},
 		}

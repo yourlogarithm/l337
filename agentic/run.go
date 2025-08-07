@@ -13,6 +13,14 @@ import (
 )
 
 func Run(ctx context.Context, messages []chat.Message, options *Options, logger *slog.Logger) (runResponse run.Response, err error) {
+	if options == nil {
+		return runResponse, fmt.Errorf("options cannot be nil")
+	}
+
+	if options.Model == nil {
+		return runResponse, fmt.Errorf("model cannot be nil")
+	}
+
 	if options.Retry == nil {
 		options.Retry = retry.Default()
 	}
@@ -43,7 +51,7 @@ func Run(ctx context.Context, messages []chat.Message, options *Options, logger 
 		}
 		logger.Debug("agent.run.response", "agent", options.Name, "response", chatResponse)
 		msg := chat.Message{
-			Role:      chat.RoleAssistant.String(),
+			Role:      chat.RoleAssistant,
 			Content:   chatResponse.Content,
 			ToolCalls: chatResponse.ToolCalls,
 		}
@@ -96,7 +104,7 @@ func Run(ctx context.Context, messages []chat.Message, options *Options, logger 
 					return runResponse, fmt.Errorf("tool call result not found for ID: %s", id)
 				}
 				runResponse.AddMessage(chat.Message{
-					Role:    chat.RoleTool.String(),
+					Role:    chat.RoleTool,
 					Content: result.Content,
 					Name:    result.ToolCall.Name,
 				})

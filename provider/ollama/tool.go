@@ -1,10 +1,11 @@
-package tools
+package ollama
 
 import (
 	"github.com/ollama/ollama/api"
+	"github.com/yourlogarithm/l337/tools"
 )
 
-func (t *Tool) ToOllamaTool() api.Tool {
+func convertTool(t *tools.Tool) api.Tool {
 	parameters := struct {
 		Type       string   "json:\"type\""
 		Defs       any      "json:\"$defs,omitempty\""

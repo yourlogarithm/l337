@@ -35,7 +35,7 @@ func (t *Team) generateCollaborateTool() tools.Tool {
 
 		messages := []chat.Message{
 			{
-				Role:    chat.RoleUser.String(),
+				Role:    chat.RoleUser,
 				Content: sb.String(),
 			},
 		}

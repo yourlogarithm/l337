@@ -1,13 +1,14 @@
-package tools
+package openai
 
 import (
 	"maps"
 
 	"github.com/invopop/jsonschema"
 	"github.com/openai/openai-go"
+	"github.com/yourlogarithm/l337/tools"
 )
 
-func (t *Tool) ToOpenAITool() (tool openai.ChatCompletionToolParam) {
+func convertTool(t *tools.Tool) (tool openai.ChatCompletionToolParam) {
 	tool.Type = "function"
 
 	tool.Function.Name = t.Name

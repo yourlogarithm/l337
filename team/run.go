@@ -19,7 +19,7 @@ func (t *Team) Run(ctx context.Context, messages []chat.Message) (run.Response, 
 
 	newMessages := []chat.Message{
 		{
-			Role:    chat.RoleSystem.String(),
+			Role:    chat.RoleSystem,
 			Content: sysMsg,
 		},
 	}

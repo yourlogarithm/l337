@@ -42,8 +42,8 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 	}
 
 	for i, msg := range request.Messages {
-		req.Messages[i].Role = msg.Role
-		if msg.Role == chat.RoleTool.String() {
+		req.Messages[i].Role = msg.Role.String()
+		if msg.Role == chat.RoleTool {
 			req.Messages[i].ToolName = msg.Name
 		}
 		req.Messages[i].Content = msg.Content
@@ -66,8 +66,8 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 		}
 	}
 
-	for _, tool := range request.Tools {
-		ollamaTool := tool.ToOllamaTool()
+	for i := range request.Tools {
+		ollamaTool := convertTool(&request.Tools[i])
 		req.Tools = append(req.Tools, ollamaTool)
 	}
 
