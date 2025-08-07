@@ -3,13 +3,16 @@ package provider
 import (
 	"context"
 
-	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/internal/chat"
 )
 
 type Model struct {
-	Name     string
+	// LLM identifier
+	Name string
+	// Provider name (e.g., "ollama", "openai")
 	Provider string
-	Impl     ModelImpl
+	// Model implementation
+	Impl ModelImpl
 }
 
 type ModelImpl interface {

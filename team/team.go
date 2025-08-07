@@ -2,7 +2,7 @@ package team
 
 import (
 	"github.com/yourlogarithm/l337/agentic"
-	"github.com/yourlogarithm/l337/logging"
+	"github.com/yourlogarithm/l337/internal/logging"
 )
 
 var logger = logging.SetupLogger("team")
@@ -10,17 +10,20 @@ var logger = logging.SetupLogger("team")
 type Team struct {
 	initialized bool
 
+	// Members of the team, either `agent.Agent`, `Team`, or custom `agentic.Member` implementations.
 	Members []agentic.Member
-	Mode    Mode
-
+	// One of "collaborate", "coordinate", or "route".
+	Mode Mode
 	agentic.Options
 }
 
-func (t *Team) initialize() bool {
-	t.Options.SetupID()
+func (t *Team) initialize() error {
+	if err := t.Options.Initialize(); err != nil {
+		return err
+	}
 
 	if t.initialized {
-		return false
+		return nil
 	}
 
 	switch t.Mode {
@@ -34,9 +37,10 @@ func (t *Team) initialize() bool {
 
 	t.initialized = true
 
-	return true
+	return nil
 }
 
+// Returns the `agentic.MemberTypeTeam` constant.
 func (t *Team) Type() agentic.MemberType {
 	return agentic.MemberTypeTeam
 }

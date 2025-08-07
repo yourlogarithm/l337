@@ -8,7 +8,8 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/logging"
+	internal_chat "github.com/yourlogarithm/l337/internal/chat"
+	"github.com/yourlogarithm/l337/internal/logging"
 	"github.com/yourlogarithm/l337/provider"
 )
 
@@ -27,7 +28,7 @@ func NewOpenAI(name string, opts ...option.RequestOption) *provider.Model {
 	}
 }
 
-func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (response chat.Response, err error) {
+func (o *OpenAI) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
 	params := openai.ChatCompletionNewParams{
 		Messages: make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
 		Model:    o.model,
@@ -77,7 +78,7 @@ func (o *OpenAI) Chat(ctx context.Context, request *chat.Request) (response chat
 	response.Content = choice.Message.Content
 	response.Refusal = choice.Message.Refusal
 	response.ToolCalls = make([]chat.ToolCall, len(choice.Message.ToolCalls))
-	response.FinishReason = chat.FinishReason(choice.FinishReason)
+	response.FinishReason = internal_chat.FinishReason(choice.FinishReason)
 
 	for j, toolCall := range choice.Message.ToolCalls {
 		arguments := make(map[string]any)

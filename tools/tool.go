@@ -7,11 +7,14 @@ import (
 )
 
 type Tool struct {
+	// Function that implements the tool's functionality.
 	Callable    ToolCallable
 	Name        string
 	Description string
-	Parameters  map[string]jsonschema.Schema
-	Required    []string
+	// Map of parameter names to their JSON schema definitions.
+	Parameters map[string]jsonschema.Schema
+	// List of mandatory parameters.
+	Required []string
 }
 
 type ToolCallable func(ctx context.Context, toolParams Params) (string, error)
@@ -25,6 +28,9 @@ func NewTool(name, description string, callable ToolCallable) Tool {
 	}
 }
 
+// Add a parameter by name, description and required status.
+//
+// The JSON schema for the parameter is inferred from the type `T`.
 func AddParameterFromType[T any](tool *Tool, name string, description string, required bool) {
 	var zero T
 	schema := jsonschema.Reflect(zero)

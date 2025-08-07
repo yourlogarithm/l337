@@ -10,6 +10,7 @@ func (r *Response) AddMessage(msg chat.Message) {
 	r.Messages = append(r.Messages, msg)
 }
 
+// Content of the last message in the response.
 func (r *Response) Content() string {
 	if len(r.Messages) == 0 {
 		return ""

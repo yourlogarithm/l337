@@ -1,11 +1,13 @@
 package chat
 
+import "github.com/yourlogarithm/l337/chat"
+
 type Response struct {
 	ID           string
 	Created      int64
 	Content      string
 	Refusal      string
-	ToolCalls    []ToolCall
+	ToolCalls    []chat.ToolCall
 	FinishReason FinishReason
 }
 
@@ -17,9 +19,3 @@ const (
 	FinishReasonToolCalls    FinishReason = "tool_calls"
 	FinishReasonFunctionCall FinishReason = "content_filter"
 )
-
-type ToolCall struct {
-	ID        string
-	Arguments map[string]any
-	Name      string
-}

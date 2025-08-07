@@ -1,4 +1,4 @@
-package agentic
+package internal
 
 import (
 	"context"
@@ -6,13 +6,16 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/yourlogarithm/l337/agentic"
 	"github.com/yourlogarithm/l337/chat"
+	internal_chat "github.com/yourlogarithm/l337/internal/chat"
 	"github.com/yourlogarithm/l337/retry"
 	"github.com/yourlogarithm/l337/run"
 	"github.com/yourlogarithm/l337/tools"
 )
 
-func Run(ctx context.Context, messages []chat.Message, options *Options, logger *slog.Logger) (runResponse run.Response, err error) {
+// Execution loop called internally by the `agent.Agent.Run` or `team.Team.Run` methods.
+func Run(ctx context.Context, messages []chat.Message, options *agentic.Options, logger *slog.Logger) (runResponse run.Response, err error) {
 	if options == nil {
 		return runResponse, fmt.Errorf("options cannot be nil")
 	}
@@ -33,8 +36,8 @@ func Run(ctx context.Context, messages []chat.Message, options *Options, logger 
 	}
 
 	for {
-		var chatResponse chat.Response
-		req := chat.Request{
+		var chatResponse internal_chat.Response
+		req := internal_chat.Request{
 			Messages: runResponse.Messages,
 			Tools:    tools,
 		}

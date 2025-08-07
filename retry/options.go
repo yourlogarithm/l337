@@ -31,6 +31,7 @@ func NewOptions(attempts int, delay float32, exponentialBackoff bool) (*Options,
 	}, nil
 }
 
+// Single attempt without any retries.
 func Default() *Options {
 	return &Options{
 		attempts:           1,

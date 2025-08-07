@@ -8,7 +8,8 @@ import (
 
 	"github.com/ollama/ollama/api"
 	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/logging"
+	internal_chat "github.com/yourlogarithm/l337/internal/chat"
+	"github.com/yourlogarithm/l337/internal/logging"
 	"github.com/yourlogarithm/l337/provider"
 )
 
@@ -32,7 +33,7 @@ func NewOllama(name string, baseUrl string, http *http.Client) (*provider.Model,
 	}, nil
 }
 
-func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat.Response, err error) {
+func (o *Ollama) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
 	stream := false
 	req := &api.ChatRequest{
 		Model:    o.model,
@@ -73,7 +74,7 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 
 	callback := func(ollamaResp api.ChatResponse) error {
 		logger.Debug("chat.response", "model", o.model, "response", ollamaResp)
-		response.FinishReason = chat.FinishReason(ollamaResp.DoneReason)
+		response.FinishReason = internal_chat.FinishReason(ollamaResp.DoneReason)
 		response.Content += ollamaResp.Message.Content
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
 			response.ToolCalls = append(response.ToolCalls, chat.ToolCall{
@@ -88,7 +89,7 @@ func (o *Ollama) Chat(ctx context.Context, request *chat.Request) (response chat
 	logger.Debug("chat.request", "model", o.model, "messages", request.Messages, "tools", request.Tools)
 
 	if err = o.client.Chat(ctx, req, callback); err != nil {
-		return chat.Response{}, err
+		return internal_chat.Response{}, err
 	}
 
 	return response, nil

@@ -3,8 +3,8 @@ package agent
 import (
 	"context"
 
-	"github.com/yourlogarithm/l337/agentic"
 	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/internal"
 	"github.com/yourlogarithm/l337/run"
 )
 
@@ -18,5 +18,5 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (run.Response,
 
 	newMessages = append(newMessages, messages...)
 
-	return agentic.Run(ctx, newMessages, &a.Options, logger)
+	return internal.Run(ctx, newMessages, &a.Options, logger)
 }

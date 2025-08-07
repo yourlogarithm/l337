@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/yourlogarithm/l337/agentic"
 	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/internal"
 	"github.com/yourlogarithm/l337/run"
 )
 
@@ -25,5 +25,5 @@ func (t *Team) Run(ctx context.Context, messages []chat.Message) (run.Response, 
 	}
 	newMessages = append(newMessages, messages...)
 
-	return agentic.Run(ctx, newMessages, t.GetOptions(), logger)
+	return internal.Run(ctx, newMessages, t.GetOptions(), logger)
 }

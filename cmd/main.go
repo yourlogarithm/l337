@@ -62,7 +62,10 @@ func math(model *provider.Model) {
 		Model:        model,
 		Tools:        toolkit,
 	}
-	agent := agent.NewFromOptions(options)
+	agent, err := agent.NewFromOptions(options)
+	if err != nil {
+		panic(err)
+	}
 	response, err := agent.Run(context.Background(), []chat.Message{
 		{
 			Role:    "user",
@@ -82,7 +85,10 @@ func collaborate(model *provider.Model) {
 		Instructions: "Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format.",
 		Model:        model,
 	}
-	inFavorAgent := agent.NewFromOptions(aOptions)
+	inFavorAgent, err := agent.NewFromOptions(aOptions)
+	if err != nil {
+		panic(err)
+	}
 
 	bOptions := agentic.Options{
 		Name:         "AgainstAgent",
@@ -90,7 +96,10 @@ func collaborate(model *provider.Model) {
 		Instructions: "Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format.",
 		Model:        model,
 	}
-	againstAgent := agent.NewFromOptions(bOptions)
+	againstAgent, err := agent.NewFromOptions(bOptions)
+	if err != nil {
+		panic(err)
+	}
 
 	teamOptions := agentic.Options{
 		Name:         "DebateTeam",
@@ -121,26 +130,35 @@ func collaborate(model *provider.Model) {
 }
 
 func route(model *provider.Model) {
-	englishAgent := agent.NewFromOptions(agentic.Options{
+	englishAgent, err := agent.NewFromOptions(agentic.Options{
 		Name:         "English Agent",
 		Description:  "An agent that specializes in English language tasks.",
 		Instructions: "You must only respond in English",
 		Model:        model,
 	})
+	if err != nil {
+		panic(err)
+	}
 
-	chineseAgent := agent.NewFromOptions(agentic.Options{
+	chineseAgent, err := agent.NewFromOptions(agentic.Options{
 		Name:         "Chinese Agent",
 		Description:  "An agent that specializes in Chinese language tasks.",
 		Instructions: "You must only respond in Chinese",
 		Model:        model,
 	})
+	if err != nil {
+		panic(err)
+	}
 
-	frenchAgent := agent.NewFromOptions(agentic.Options{
+	frenchAgent, err := agent.NewFromOptions(agentic.Options{
 		Name:         "French Agent",
 		Description:  "An agent that specializes in French language tasks.",
 		Instructions: "You must only respond in French",
 		Model:        model,
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	multiLanguageTeam := team.Team{
 		Options: agentic.Options{
