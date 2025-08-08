@@ -7,35 +7,20 @@ import (
 
 func convertTool(t *tools.Tool) api.Tool {
 	parameters := struct {
-		Type       string   "json:\"type\""
-		Defs       any      "json:\"$defs,omitempty\""
-		Items      any      "json:\"items,omitempty\""
-		Required   []string "json:\"required\""
-		Properties map[string]struct {
-			Type        api.PropertyType "json:\"type\""
-			Items       any              "json:\"items,omitempty\""
-			Description string           "json:\"description\""
-			Enum        []any            "json:\"enum,omitempty\""
-		} "json:\"properties\""
+		Type       string                      `json:"type"`
+		Defs       any                         `json:"$defs,omitempty"`
+		Items      any                         `json:"items,omitempty"`
+		Required   []string                    `json:"required"`
+		Properties map[string]api.ToolProperty `json:"properties"`
 	}{
 		Type:     "object",
 		Required: t.Required,
 	}
 
-	parameters.Properties = make(map[string]struct {
-		Type        api.PropertyType `json:"type"`
-		Items       any              `json:"items,omitempty"`
-		Description string           `json:"description"`
-		Enum        []any            `json:"enum,omitempty"`
-	}, len(t.Parameters))
+	parameters.Properties = make(map[string]api.ToolProperty, len(t.Parameters))
 
 	for name, schema := range t.Parameters {
-		ollamaParam := struct {
-			Type        api.PropertyType "json:\"type\""
-			Items       any              "json:\"items,omitempty\""
-			Description string           "json:\"description\""
-			Enum        []any            "json:\"enum,omitempty\""
-		}{
+		ollamaParam := api.ToolProperty{
 			Type:        []string{schema.Type},
 			Items:       schema.Items,
 			Description: schema.Description,
