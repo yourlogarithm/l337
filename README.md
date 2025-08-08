@@ -26,4 +26,4 @@ Refer to the following examples to get started:
 
 # Contributing
 
-We welcome contributions! Please read the [contributing guidelines](CONTRIBUTING.md) for more information.
+Contributions are welcome! Please read the [contributing guidelines](CONTRIBUTING.md) for more information.
