@@ -56,6 +56,11 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 		}
 	}
 
+	for i := range request.Tools {
+		toolParam := convertTool(&request.Tools[i])
+		params.Tools = append(params.Tools, toolParam)
+	}
+
 	message, err := a.client.Messages.New(ctx, params)
 	if err != nil {
 		return response, err
