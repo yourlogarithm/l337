@@ -15,7 +15,7 @@ import (
 
 var logger = logging.SetupLogger("provider.openai")
 
-type OpenAI struct {
+type openAIProvider struct {
 	model  string
 	client openai.Client
 }
@@ -24,11 +24,11 @@ func NewModel(name string, opts ...option.RequestOption) *provider.Model {
 	return &provider.Model{
 		Name:     name,
 		Provider: "openai",
-		Impl:     &OpenAI{model: name, client: openai.NewClient(opts...)},
+		Impl:     &openAIProvider{model: name, client: openai.NewClient(opts...)},
 	}
 }
 
-func (o *OpenAI) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
+func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
 	params := openai.ChatCompletionNewParams{
 		Messages: make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
 		Model:    o.model,
