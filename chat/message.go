@@ -8,6 +8,7 @@ type Message struct {
 	Name      string
 	Content   string
 	ToolCalls []ToolCall
+	IsErr     bool
 }
 
 type ToolCall struct {

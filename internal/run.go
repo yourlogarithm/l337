@@ -68,6 +68,7 @@ func Run(ctx context.Context, messages []chat.Message, options *agentic.Options,
 			type ToolCallResult struct {
 				ToolCall *chat.ToolCall
 				Content  string
+				IsErr    bool
 			}
 
 			results := make(map[string]ToolCallResult, len(chatResponse.ToolCalls))
@@ -79,12 +80,14 @@ func Run(ctx context.Context, messages []chat.Message, options *agentic.Options,
 				go func(toolCall *chat.ToolCall) {
 					defer wg.Done()
 					var content string
+					var isErr bool
 
 					tool, exists := options.Tools.Get(toolCall.Name)
 					if exists {
 						result, err := tool.Callable(ctx, toolCall.Arguments)
 						if err != nil {
 							content = "error: " + err.Error()
+							isErr = true
 						} else {
 							content = result
 						}
@@ -96,6 +99,7 @@ func Run(ctx context.Context, messages []chat.Message, options *agentic.Options,
 					results[toolCall.ID] = ToolCallResult{
 						ToolCall: toolCall,
 						Content:  content,
+						IsErr:    isErr,
 					}
 				}(&tc)
 			}
@@ -110,6 +114,7 @@ func Run(ctx context.Context, messages []chat.Message, options *agentic.Options,
 					Role:    chat.RoleTool,
 					Content: result.Content,
 					Name:    result.ToolCall.Name,
+					IsErr:   result.IsErr,
 				})
 			}
 		} else {

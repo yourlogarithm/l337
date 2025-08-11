@@ -8,14 +8,5 @@ type Response struct {
 	Content      string
 	Refusal      string
 	ToolCalls    []chat.ToolCall
-	FinishReason FinishReason
+	FinishReason string
 }
-
-type FinishReason string
-
-const (
-	FinishReasonStop         FinishReason = "stop"
-	FinishReasonLength       FinishReason = "length"
-	FinishReasonToolCalls    FinishReason = "tool_calls"
-	FinishReasonFunctionCall FinishReason = "content_filter"
-)

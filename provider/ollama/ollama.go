@@ -15,7 +15,7 @@ import (
 
 var logger = logging.SetupLogger("provider.ollama")
 
-type Ollama struct {
+type ollamaProvider struct {
 	model  string
 	client *api.Client
 }
@@ -29,11 +29,11 @@ func NewModel(name string, baseUrl string, http *http.Client) (*provider.Model, 
 	return &provider.Model{
 		Name:     name,
 		Provider: "ollama",
-		Impl:     &Ollama{model: name, client: client},
+		Impl:     &ollamaProvider{model: name, client: client},
 	}, nil
 }
 
-func (o *Ollama) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
+func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
 	stream := false
 	req := &api.ChatRequest{
 		Model:    o.model,
@@ -74,7 +74,7 @@ func (o *Ollama) Chat(ctx context.Context, request *internal_chat.Request) (resp
 
 	callback := func(ollamaResp api.ChatResponse) error {
 		logger.Debug("chat.response", "model", o.model, "response", ollamaResp)
-		response.FinishReason = internal_chat.FinishReason(ollamaResp.DoneReason)
+		response.FinishReason = ollamaResp.DoneReason
 		response.Content += ollamaResp.Message.Content
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
 			response.ToolCalls = append(response.ToolCalls, chat.ToolCall{
