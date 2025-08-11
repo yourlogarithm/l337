@@ -2,6 +2,9 @@ package anthropic
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -35,19 +38,49 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 		switch msg.Role {
 		case chat.RoleAssistant:
 			anthropicMsg.Role = anthropic.MessageParamRoleAssistant
-			anthropicMsg.Content = append(anthropicMsg.Content, anthropic.NewTextBlock(msg.Content))
+			for _, toolCall := range msg.ToolCalls {
+				anthropicMsg.Content = append(anthropicMsg.Content, anthropic.NewToolUseBlock(toolCall.ID, toolCall.Arguments, toolCall.Name))
+			}
+			params.Messages = append(params.Messages, anthropicMsg)
 		case chat.RoleUser:
 			anthropicMsg.Role = anthropic.MessageParamRoleUser
-			anthropicMsg.Content = append(anthropicMsg.Content, anthropic.NewTextBlock(msg.Content))
+			params.Messages = append(params.Messages, anthropicMsg)
+		case chat.RoleSystem:
+			params.System = append(params.System, anthropic.TextBlockParam{Text: msg.Content})
+		case chat.RoleTool:
+			anthropicMsg.Role = anthropic.MessageParamRoleUser
+			anthropicMsg.Content = append(anthropicMsg.Content, anthropic.NewToolResultBlock(msg.Name, msg.Content, msg.IsErr))
+			params.Messages = append(params.Messages, anthropicMsg)
 		default:
 			return response, provider.NewUnknownRoleError(msg.Role.String())
 		}
-		params.Messages = append(params.Messages, anthropicMsg)
 	}
 
 	message, err := a.client.Messages.New(ctx, params)
 	if err != nil {
 		return response, err
+	}
+
+	response.ID = message.ID
+	response.Created = time.Now().Unix()
+	response.FinishReason = string(message.StopReason)
+
+	for _, contentBlock := range message.Content {
+		switch contentBlock.Type {
+		case "text":
+			response.Content += contentBlock.Text
+		case "tool_use":
+			toolCall := chat.ToolCall{
+				ID:   contentBlock.ID,
+				Name: contentBlock.Name,
+			}
+			if err := json.Unmarshal(contentBlock.Input, &toolCall.Arguments); err != nil {
+				return response, err
+			}
+			response.ToolCalls = append(response.ToolCalls, toolCall)
+		default:
+			return response, fmt.Errorf("unsupported content block type: %s", contentBlock.Type)
+		}
 	}
 
 	return response, err

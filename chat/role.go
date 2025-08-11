@@ -3,12 +3,11 @@ package chat
 type Role string
 
 const (
-	RoleSystem    Role = "system"
-	RoleUser      Role = "user"
 	RoleAssistant Role = "assistant"
-	RoleTool      Role = "tool"
 	RoleDeveloper Role = "developer"
-	RoleFunction  Role = "function"
+	RoleSystem    Role = "system"
+	RoleTool      Role = "tool"
+	RoleUser      Role = "user"
 )
 
 func (r Role) String() string {

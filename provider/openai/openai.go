@@ -52,8 +52,6 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 			openaiMsg.OfAssistant.Name = openai.String(msg.Name)
 		case chat.RoleTool:
 			openaiMsg = openai.ToolMessage(msg.Content, msg.Name)
-		case chat.RoleFunction:
-			openaiMsg = openai.ChatCompletionMessageParamOfFunction(msg.Content, msg.Name)
 		default:
 			return response, provider.NewUnknownRoleError(msg.Role.String())
 		}
@@ -78,7 +76,7 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 	response.Content = choice.Message.Content
 	response.Refusal = choice.Message.Refusal
 	response.ToolCalls = make([]chat.ToolCall, len(choice.Message.ToolCalls))
-	response.FinishReason = internal_chat.FinishReason(choice.FinishReason)
+	response.FinishReason = choice.FinishReason
 
 	for j, toolCall := range choice.Message.ToolCalls {
 		arguments := make(map[string]any)

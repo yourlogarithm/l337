@@ -74,7 +74,7 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 
 	callback := func(ollamaResp api.ChatResponse) error {
 		logger.Debug("chat.response", "model", o.model, "response", ollamaResp)
-		response.FinishReason = internal_chat.FinishReason(ollamaResp.DoneReason)
+		response.FinishReason = ollamaResp.DoneReason
 		response.Content += ollamaResp.Message.Content
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
 			response.ToolCalls = append(response.ToolCalls, chat.ToolCall{
