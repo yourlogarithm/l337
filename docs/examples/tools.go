@@ -65,7 +65,7 @@ func divide(ctx context.Context, params tools.Params) (string, error) {
 func ToolsExample() {
 	model := openai.NewModel("gpt-4o")
 
-	mathAgentOptions := agentic.Options{
+	mathAgentOptions := agentic.Configuration{
 		Name:         "Math Agent",
 		Description:  "An agent that can perform basic math operations.",
 		Instructions: "Perform addition, subtraction, multiplication, and division based on the user's request. If the operation is not supported, respond that you cannot perform that operation.",

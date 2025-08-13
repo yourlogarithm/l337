@@ -16,5 +16,5 @@ type Model struct {
 }
 
 type ModelImpl interface {
-	Chat(ctx context.Context, request *chat.Request) (chat.Response, error)
+	Chat(ctx context.Context, request *chat.Request, options *ChatOptions) (chat.Response, error)
 }

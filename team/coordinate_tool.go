@@ -10,7 +10,7 @@ import (
 
 func (t *Team) generateCoordinateTool() tools.Tool {
 	callable := func(ctx context.Context, params tools.Params) (string, error) {
-		logger.Debug("coordinate.call", "team", t.Options.ID, "params", params)
+		logger.Debug("coordinate.call", "team", t.Configuration.ID, "params", params)
 
 		memberID, err := tools.GetParameter[string](params, "member_id")
 		if err != nil {

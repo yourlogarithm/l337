@@ -8,22 +8,22 @@ import (
 var logger = logging.SetupLogger("agent")
 
 type Agent struct {
-	agentic.Options
+	agentic.Configuration
 }
 
 func (a *Agent) Type() agentic.MemberType {
 	return agentic.MemberTypeAgent
 }
 
-func (a *Agent) GetOptions() *agentic.Options {
-	return &a.Options
+func (a *Agent) GetOptions() *agentic.Configuration {
+	return &a.Configuration
 }
 
-func NewFromOptions(options agentic.Options) (*Agent, error) {
+func NewFromOptions(options agentic.Configuration) (*Agent, error) {
 	if err := options.Initialize(); err != nil {
 		return nil, err
 	}
 	return &Agent{
-		Options: options,
+		Configuration: options,
 	}, nil
 }

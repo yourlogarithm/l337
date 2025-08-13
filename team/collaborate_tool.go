@@ -12,7 +12,7 @@ import (
 
 func (t *Team) generateCollaborateTool() tools.Tool {
 	callable := func(ctx context.Context, params tools.Params) (string, error) {
-		logger.Debug("collaborate.call", "team", t.Options.ID, "params", params)
+		logger.Debug("collaborate.call", "team", t.Configuration.ID, "params", params)
 
 		task_description, err := tools.GetParameter[string](params, "task_description")
 		if err != nil {

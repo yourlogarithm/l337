@@ -10,7 +10,7 @@ import (
 	"github.com/yourlogarithm/l337/tools"
 )
 
-type Options struct {
+type Configuration struct {
 	initialized bool
 
 	// Unique identifier for the member
@@ -35,18 +35,20 @@ type Options struct {
 	ExpectedOutput string
 	// Model used to send LLM requests
 	// If not set, an error will be returned as soon as `Initialize` is called
-	Model *provider.Model
+	*provider.Model
 	// Tools for the LLM to use
 	Tools tools.Toolkit
 	// Retry options for the LLM requests
 	// If not set, defaults to `retry.Default()`
 	Retry *retry.Options
+
+	provider.ChatOptions
 }
 
 // Generates a random ID if not set
 //
 // Checks that mandatory fields are set
-func (o *Options) Initialize() error {
+func (o *Configuration) Initialize() error {
 	if o.initialized {
 		return nil
 	}
@@ -67,7 +69,7 @@ func (o *Options) Initialize() error {
 }
 
 // Generates the system message for the member
-func (o *Options) ComputeSystemMessage() string {
+func (o *Configuration) ComputeSystemMessage() string {
 	var sb strings.Builder
 
 	appendSystemString := func(s, tag string) {

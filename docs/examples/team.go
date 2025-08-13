@@ -14,7 +14,7 @@ import (
 func TeamExample() {
 	model := openai.NewModel("gpt-4o")
 
-	jediOptions := agentic.Options{
+	jediOptions := agentic.Configuration{
 		Name:         "Jedi Master",
 		Role:         "Help the user with questions regarding the Jedi ways.",
 		Description:  "A wise and powerful Jedi Master.",
@@ -26,7 +26,7 @@ func TeamExample() {
 		panic(err)
 	}
 
-	sithOptions := agentic.Options{
+	sithOptions := agentic.Configuration{
 		Name:         "Sith Lord",
 		Role:         "Help the user with questions regarding the Dark Side of the Force.",
 		Description:  "A cunning and powerful Sith Lord.",
@@ -38,14 +38,14 @@ func TeamExample() {
 		panic(err)
 	}
 
-	teamOptions := agentic.Options{
+	teamOptions := agentic.Configuration{
 		Name:         "Star Wars Team",
 		Description:  "A team of agents representing the Jedi and Sith.",
 		Instructions: "You are a team of agents representing the Jedi and Sith. Choose the best agent to respond to the user's queries based on their nature. The Jedi will provide answers about their ways, while the Sith will provide answers about the Dark Side. If the user asks a question that is unrelated to either, respond directly that you cannot answer that question. If the question is related to Star Wars lore, but is neutral, respond directly without assigning it to either agent.",
 		Model:        model,
 	}
 	team := team.Team{
-		Options: teamOptions,
+		Configuration: teamOptions,
 		Members: []agentic.Member{
 			jediAgent,
 			sithAgent,

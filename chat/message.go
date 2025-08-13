@@ -1,14 +1,16 @@
 package chat
 
 type Message struct {
-	Role Role
-	// An optional name for the participant. Provides the model information to
-	// differentiate between participants of the same role.
-	// Not all providers support this.
-	Name      string
-	Content   string
+	Role    Role
+	Content string
+	// Assistant tool calls
 	ToolCalls []ToolCall
-	IsErr     bool
+	// OpenAI: An optional name for the participant. Provides the model information to differentiate between participants of the same role.
+	Name string
+	// OpenAI: Assistant refusal message
+	Refusal string
+	// Anthropic: User boolean indicating whether function call resulted in an error.
+	IsErr bool
 }
 
 type ToolCall struct {

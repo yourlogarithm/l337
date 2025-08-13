@@ -15,7 +15,7 @@ import (
 )
 
 // Execution loop called internally by the `agent.Agent.Run` or `team.Team.Run` methods.
-func Run(ctx context.Context, messages []chat.Message, options *agentic.Options, logger *slog.Logger) (runResponse run.Response, err error) {
+func Run(ctx context.Context, messages []chat.Message, options *agentic.Configuration, logger *slog.Logger) (runResponse run.Response, err error) {
 	if options == nil {
 		return runResponse, fmt.Errorf("options cannot be nil")
 	}
@@ -43,7 +43,7 @@ func Run(ctx context.Context, messages []chat.Message, options *agentic.Options,
 		}
 		logger.Debug("agent.run.request", "agent", options.Name, "request", req)
 		if err = options.Retry.Execute(func() error {
-			response, err := options.Model.Impl.Chat(ctx, &req)
+			response, err := options.Model.Impl.Chat(ctx, &req, &options.ChatOptions)
 			if err != nil {
 				return err
 			}

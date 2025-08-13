@@ -2,6 +2,7 @@ package ollama
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -33,13 +34,46 @@ func NewModel(name string, baseUrl string, http *http.Client) (*provider.Model, 
 	}, nil
 }
 
-func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
+func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Request, options *provider.ChatOptions) (response internal_chat.Response, err error) {
 	stream := false
 	req := &api.ChatRequest{
 		Model:    o.model,
 		Messages: make([]api.Message, len(request.Messages)),
 		Stream:   &stream,
 		Tools:    make([]api.Tool, 0, len(request.Tools)),
+		Think:    &api.ThinkValue{Value: options.ReasoningEffort},
+		Options:  make(map[string]any),
+	}
+
+	if options.ResponseFormat != nil {
+		req.Format, err = json.Marshal(options.ResponseFormat)
+		if err != nil {
+			return response, err
+		}
+	}
+
+	if options.KeepAlive != nil {
+		req.KeepAlive = &api.Duration{Duration: *options.KeepAlive}
+	}
+
+	if options.Temperature != nil {
+		req.Options["temperature"] = *options.Temperature
+	}
+
+	if options.Seed != nil {
+		req.Options["seed"] = *options.Seed
+	}
+
+	if len(options.Stop) > 0 {
+		req.Options["stop"] = options.Stop
+	}
+
+	if options.TopK != nil {
+		req.Options["top_k"] = *options.TopK
+	}
+
+	if options.TopP != nil {
+		req.Options["top_p"] = *options.TopP
 	}
 
 	for i, msg := range request.Messages {

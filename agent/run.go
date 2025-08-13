@@ -12,11 +12,11 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (run.Response,
 	newMessages := []chat.Message{
 		{
 			Role:    chat.RoleSystem,
-			Content: a.Options.ComputeSystemMessage(),
+			Content: a.Configuration.ComputeSystemMessage(),
 		},
 	}
 
 	newMessages = append(newMessages, messages...)
 
-	return internal.Run(ctx, newMessages, &a.Options, logger)
+	return internal.Run(ctx, newMessages, &a.Configuration, logger)
 }

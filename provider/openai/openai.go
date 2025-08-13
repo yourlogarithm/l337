@@ -7,6 +7,8 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/packages/param"
+	"github.com/openai/openai-go/shared"
 	"github.com/yourlogarithm/l337/chat"
 	internal_chat "github.com/yourlogarithm/l337/internal/chat"
 	"github.com/yourlogarithm/l337/internal/logging"
@@ -28,11 +30,54 @@ func NewModel(name string, opts ...option.RequestOption) *provider.Model {
 	}
 }
 
-func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
+func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Request, options *provider.ChatOptions) (response internal_chat.Response, err error) {
 	params := openai.ChatCompletionNewParams{
-		Messages: make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
-		Model:    o.model,
-		Tools:    make([]openai.ChatCompletionToolParam, 0, len(request.Tools)),
+		Messages:            make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
+		Model:               o.model,
+		Tools:               make([]openai.ChatCompletionToolParam, 0, len(request.Tools)),
+		Logprobs:            param.NewOpt(options.Logprobs),
+		MaxCompletionTokens: param.NewOpt(int64(options.MaxCompletionTokens)),
+		MaxTokens:           param.NewOpt(int64(options.MaxTokens)),
+		PresencePenalty:     param.NewOpt(options.PresencePenalty),
+		PromptCacheKey:      param.NewOpt(options.PromptCacheKey),
+		SafetyIdentifier:    param.NewOpt(options.SafetyIdentifier),
+		User:                param.NewOpt(options.User),
+		LogitBias:           options.LogitBias,
+		ReasoningEffort:     shared.ReasoningEffort(options.ReasoningEffort),
+		ServiceTier:         openai.ChatCompletionNewParamsServiceTier(options.ServiceTier),
+		Stop:                openai.ChatCompletionNewParamsStopUnion{OfStringArray: options.Stop},
+	}
+
+	if options.FrequencyPenalty != nil {
+		params.FrequencyPenalty = param.NewOpt(*options.FrequencyPenalty)
+	}
+
+	if options.N != nil {
+		params.N = param.NewOpt(int64(*options.N))
+	}
+
+	if options.Seed != nil {
+		params.Seed = param.NewOpt(int64(*options.Seed))
+	}
+
+	if options.Temperature != nil {
+		params.Temperature = param.NewOpt(*options.Temperature)
+	}
+
+	if options.TopLogprobs != nil {
+		params.TopLogprobs = param.NewOpt(int64(*options.TopLogprobs))
+	}
+
+	if options.TopP != nil {
+		params.TopP = param.NewOpt(*options.TopP)
+	}
+
+	if options.ParallelToolCalls != nil {
+		params.ParallelToolCalls = param.NewOpt(*options.ParallelToolCalls)
+	}
+
+	if options.ResponseFormat != nil {
+		params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{Schema: options.ResponseFormat}}}
 	}
 
 	for _, msg := range request.Messages {

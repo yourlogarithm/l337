@@ -55,7 +55,7 @@ func math(model *provider.Model) {
 	toolkit.AddTool(addTool)
 	toolkit.AddTool(subtractTool)
 
-	options := agentic.Options{
+	options := agentic.Configuration{
 		Name:         "ExampleAgent",
 		Description:  "An example agent for demonstration purposes.",
 		Instructions: "None at all",
@@ -79,7 +79,7 @@ func math(model *provider.Model) {
 }
 
 func collaborate(model *provider.Model) {
-	aOptions := agentic.Options{
+	aOptions := agentic.Configuration{
 		Name:         "InFavorAgent",
 		Description:  "Agent that provides a detailed analysis in favor of the discussed topic.",
 		Instructions: "Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format.",
@@ -90,7 +90,7 @@ func collaborate(model *provider.Model) {
 		panic(err)
 	}
 
-	bOptions := agentic.Options{
+	bOptions := agentic.Configuration{
 		Name:         "AgainstAgent",
 		Description:  "Agent that provides a detailed analysis against the discussed topic.",
 		Instructions: "Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format.",
@@ -101,7 +101,7 @@ func collaborate(model *provider.Model) {
 		panic(err)
 	}
 
-	teamOptions := agentic.Options{
+	teamOptions := agentic.Configuration{
 		Name:         "DebateTeam",
 		Description:  "A team of agents debating a topic.",
 		Instructions: "Use your team members to collaboratively analyze the topic and provide a comprehensive response.\nUse InFavorAgent to assign him the task of providing a supportive perspective on the topic.\nUse AgainstAgent to assign him the task of providing an opposing perspective on the topic.\nAfter analyzing both responses, you must come to a conclusion choosing a single side which had better arguments.",
@@ -109,7 +109,7 @@ func collaborate(model *provider.Model) {
 	}
 
 	t := team.Team{
-		Options: teamOptions,
+		Configuration: teamOptions,
 		Members: []agentic.Member{
 			inFavorAgent,
 			againstAgent,
@@ -130,7 +130,7 @@ func collaborate(model *provider.Model) {
 }
 
 func route(model *provider.Model) {
-	englishAgent, err := agent.NewFromOptions(agentic.Options{
+	englishAgent, err := agent.NewFromOptions(agentic.Configuration{
 		Name:         "English Agent",
 		Description:  "An agent that specializes in English language tasks.",
 		Instructions: "You must only respond in English",
@@ -140,7 +140,7 @@ func route(model *provider.Model) {
 		panic(err)
 	}
 
-	chineseAgent, err := agent.NewFromOptions(agentic.Options{
+	chineseAgent, err := agent.NewFromOptions(agentic.Configuration{
 		Name:         "Chinese Agent",
 		Description:  "An agent that specializes in Chinese language tasks.",
 		Instructions: "You must only respond in Chinese",
@@ -150,7 +150,7 @@ func route(model *provider.Model) {
 		panic(err)
 	}
 
-	frenchAgent, err := agent.NewFromOptions(agentic.Options{
+	frenchAgent, err := agent.NewFromOptions(agentic.Configuration{
 		Name:         "French Agent",
 		Description:  "An agent that specializes in French language tasks.",
 		Instructions: "You must only respond in French",
@@ -161,7 +161,7 @@ func route(model *provider.Model) {
 	}
 
 	multiLanguageTeam := team.Team{
-		Options: agentic.Options{
+		Configuration: agentic.Configuration{
 			Name:         "Multi-Language Team",
 			Description:  "A team of agents that can handle tasks in multiple languages.",
 			Instructions: "You are a language router that directs questions to the appropriate language agent.\nIf the user asks in a language whose agent is not a team member, respond in English with:\n'I can only answer in the following languages: English, Spanish, Japanese, French and German. Please ask your question in one of these languages.'\nAlways check the language of the user's input before routing to an agent.\nFor unsupported languages like Italian, respond in English with the above message.",

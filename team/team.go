@@ -16,11 +16,11 @@ type Team struct {
 	Members []agentic.Member
 	// One of "collaborate", "coordinate", or "route".
 	Mode Mode
-	agentic.Options
+	agentic.Configuration
 }
 
 func (t *Team) initialize() error {
-	if err := t.Options.Initialize(); err != nil {
+	if err := t.Configuration.Initialize(); err != nil {
 		return err
 	}
 
@@ -53,8 +53,8 @@ func (t *Team) Type() agentic.MemberType {
 	return agentic.MemberTypeTeam
 }
 
-func (t *Team) GetOptions() *agentic.Options {
-	return &t.Options
+func (t *Team) GetOptions() *agentic.Configuration {
+	return &t.Configuration
 }
 
 func (t *Team) findMemberByID(memberID string) *agentic.Member {

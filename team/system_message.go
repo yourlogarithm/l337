@@ -76,7 +76,7 @@ func (t *Team) computeSystemMessage() (string, error) {
 	}
 	sb.WriteString("</how_to_respond>\n\n")
 
-	sb.WriteString(t.Options.ComputeSystemMessage())
+	sb.WriteString(t.Configuration.ComputeSystemMessage())
 
 	return sb.String(), nil
 }

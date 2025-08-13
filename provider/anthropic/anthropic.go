@@ -8,10 +8,14 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
+	"github.com/anthropics/anthropic-sdk-go/packages/param"
 	"github.com/yourlogarithm/l337/chat"
 	internal_chat "github.com/yourlogarithm/l337/internal/chat"
+	"github.com/yourlogarithm/l337/internal/logging"
 	"github.com/yourlogarithm/l337/provider"
 )
+
+var logger = logging.SetupLogger("provider.anthropic")
 
 type anthropicProvider struct {
 	model  anthropic.Model
@@ -26,11 +30,33 @@ func NewModel(name anthropic.Model, opts ...option.RequestOption) *provider.Mode
 	}
 }
 
-func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Request) (response internal_chat.Response, err error) {
+func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Request, options *provider.ChatOptions) (response internal_chat.Response, err error) {
 	params := anthropic.MessageNewParams{
 		Messages: make([]anthropic.MessageParam, 0, len(request.Messages)),
 		Model:    a.model,
 		Tools:    make([]anthropic.ToolUnionParam, 0, len(request.Tools)),
+
+		MaxTokens:     int64(options.MaxTokens),
+		ServiceTier:   anthropic.MessageNewParamsServiceTier(options.ServiceTier),
+		StopSequences: options.Stop,
+	}
+
+	if options.Temperature != nil {
+		params.Temperature = param.NewOpt(*options.Temperature)
+	}
+
+	if options.TopK != nil {
+		params.TopK = param.NewOpt(*options.TopK)
+	}
+
+	if options.TopP != nil {
+		params.TopP = param.NewOpt(*options.TopP)
+	}
+
+	if options.Thinking >= 1024 && (options.MaxTokens == 0 || options.Thinking < uint64(options.MaxTokens)) {
+		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(options.Thinking))
+	} else if options.Thinking > 0 {
+		return response, fmt.Errorf("thinking must be >= 1024 and less than max_tokens")
 	}
 
 	for _, msg := range request.Messages {
@@ -61,11 +87,13 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 		params.Tools = append(params.Tools, toolParam)
 	}
 
+	logger.Debug("chat.request", "model", a.model, "messages", request.Messages, "tools", request.Tools)
 	message, err := a.client.Messages.New(ctx, params)
 	if err != nil {
 		return response, err
 	}
 
+	logger.Debug("chat.response", "model", a.model, "response", message)
 	response.ID = message.ID
 	response.Created = time.Now().Unix()
 	response.FinishReason = string(message.StopReason)

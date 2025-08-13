@@ -9,6 +9,6 @@ import (
 
 type Member interface {
 	Type() MemberType
-	GetOptions() *Options
+	GetOptions() *Configuration
 	Run(ctx context.Context, messages []chat.Message) (runResponse run.Response, err error)
 }

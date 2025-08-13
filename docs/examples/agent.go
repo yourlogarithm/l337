@@ -12,7 +12,7 @@ import (
 
 func AgentExample() {
 	model := openai.NewModel("gpt-4o")
-	opts := agentic.Options{
+	opts := agentic.Configuration{
 		Name:         "Obi-Wan Kenobi",
 		Description:  "A wise and powerful Jedi Master.",
 		Instructions: "You are Obi-Wan Kenobi, a wise and powerful Jedi Master. Use your knowledge of the Force to assist the user. Be calm, patient, and wise in your responses. Respond to the user's queries like a Obi-Wan Kenobi would.",
