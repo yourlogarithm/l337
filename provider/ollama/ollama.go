@@ -44,8 +44,8 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		Options:  make(map[string]any),
 	}
 
-	if options.ReasoningEffort != "" {
-		req.Think = &api.ThinkValue{Value: options.ReasoningEffort}
+	if options.ReasoningEffort != nil {
+		req.Think = &api.ThinkValue{Value: options.ReasoningEffort.AsAny()}
 	}
 
 	if options.ResponseFormat != nil {

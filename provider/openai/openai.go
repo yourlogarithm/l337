@@ -2,6 +2,7 @@ package openai
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -40,9 +41,16 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		SafetyIdentifier:    param.NewOpt(options.SafetyIdentifier),
 		User:                param.NewOpt(options.User),
 		LogitBias:           options.LogitBias,
-		ReasoningEffort:     shared.ReasoningEffort(options.ReasoningEffort),
 		ServiceTier:         openai.ChatCompletionNewParamsServiceTier(options.ServiceTier),
 		Stop:                openai.ChatCompletionNewParamsStopUnion{OfStringArray: options.Stop},
+	}
+
+	if options.ReasoningEffort != nil {
+		if level, ok := options.ReasoningEffort.AsLevel(); ok {
+			params.ReasoningEffort = shared.ReasoningEffort(level)
+		} else {
+			return response, fmt.Errorf("invalid reasoning effort: %v", options.ReasoningEffort)
+		}
 	}
 
 	if options.MaxTokens > 0 {

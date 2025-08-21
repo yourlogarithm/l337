@@ -11,12 +11,24 @@ import (
 )
 
 type delegateTaskParams struct {
-	Names          []string `json:"names"`
-	ExpectedOutput string   `json:"expected_output"`
+	// Names of the subordinates to delegate the task to
+	Names []string `json:"names" jsonschema:"required,description=Names of the subordinates to delegate the task to"`
+	// Expected output from the subordinates
+	ExpectedOutput string `json:"expected_output" jsonschema:"required,description=Expected output from the subordinates"`
 }
 
 func addDelegateTaskTool(agent *Agent) {
 	delegateTask := func(ctx context.Context, params delegateTaskParams) (string, error) {
+		logger.Debug("delegate_task", "params", params)
+
+		if len(params.Names) == 0 {
+			return "", fmt.Errorf("no subordinates specified")
+		}
+
+		if params.ExpectedOutput == "" {
+			return "", fmt.Errorf("no expected output specified")
+		}
+
 		nameSet := make(map[string]struct{}, len(params.Names))
 		for _, name := range params.Names {
 			nameSet[name] = struct{}{}
@@ -52,7 +64,10 @@ func addDelegateTaskTool(agent *Agent) {
 		return sb.String(), nil
 	}
 
-	tool := tools.NewToolWithArgs("delegate_task", "Delegates the task to one or more subordinates", delegateTask)
+	tool, err := tools.NewToolWithArgs("delegate_task", "Delegates the task to one or more subordinates", delegateTask)
+	if err != nil {
+		panic(err)
+	}
 
 	agent.tools.AddTool(tool)
 }

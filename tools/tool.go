@@ -3,6 +3,8 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/invopop/jsonschema"
 )
@@ -42,12 +44,25 @@ func NewTool(name, description string, callable func(ctx context.Context) (strin
 	}
 }
 
-func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T]) Tool {
+func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T]) (Tool, error) {
+
+	schema := jsonschema.Reflect(new(T))
+	targetRef := strings.TrimPrefix(schema.Ref, "#/$defs/")
+	v, ok := schema.Definitions[targetRef]
+	if !ok {
+		return Tool{}, fmt.Errorf("definition %s not found", targetRef)
+	}
+	schema.Items = v.Items
+	schema.Properties = v.Properties
+	schema.Required = v.Required
+	schema.Type = v.Type
+	delete(schema.Definitions, targetRef)
+
 	return Tool{
 		Callable: wrapCallable(callable),
 
 		Name:        name,
 		Description: description,
-		Schema:      jsonschema.Reflect(new(T)),
-	}
+		Schema:      schema,
+	}, nil
 }

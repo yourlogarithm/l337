@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"github.com/openai/openai-go/option"
 	"github.com/yourlogarithm/l337/agent"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider"
-	"github.com/yourlogarithm/l337/provider/openai"
+	"github.com/yourlogarithm/l337/provider/ollama"
 )
 
 // Returns the sum of a and b
@@ -64,17 +62,21 @@ import (
 // }
 
 func collaborate(model *provider.Model) {
-	inFavorAgent, err := agent.New(model, agent.WithName("favor_agent"), agent.WithDescription("Agent that provides a detailed analysis in favor of the discussed topic."), agent.WithInstructions("Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format."))
+	chatOptions := provider.ChatOptions{
+		ReasoningEffort: provider.NewReasoningEffortBool(true),
+	}
+
+	inFavorAgent, err := agent.New(model, agent.WithName("favor_agent"), agent.WithDescription("Agent that provides a detailed analysis in favor of the discussed topic."), agent.WithInstructions("Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format."), agent.WithChatOptions(chatOptions))
 	if err != nil {
 		panic(err)
 	}
 
-	againstAgent, err := agent.New(model, agent.WithName("against_agent"), agent.WithDescription("Agent that provides a detailed analysis against the discussed topic."), agent.WithInstructions("Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format."))
+	againstAgent, err := agent.New(model, agent.WithName("against_agent"), agent.WithDescription("Agent that provides a detailed analysis against the discussed topic."), agent.WithInstructions("Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format."), agent.WithChatOptions(chatOptions))
 	if err != nil {
 		panic(err)
 	}
 
-	team, err := agent.New(model, agent.WithName("debate_team"), agent.WithDescription("A team of agents debating a topic."), agent.WithInstructions("Use your team members to collaboratively analyze the topic and provide a comprehensive response.\nUse InFavorAgent to assign him the task of providing a supportive perspective on the topic.\nUse AgainstAgent to assign him the task of providing an opposing perspective on the topic.\nAfter analyzing both responses, you must come to a conclusion choosing a single side which had better arguments."), agent.WithSubordinate(inFavorAgent), agent.WithSubordinate(againstAgent))
+	team, err := agent.New(model, agent.WithName("debate_team"), agent.WithDescription("A team of agents debating a topic."), agent.WithInstructions("Use your team members to collaboratively analyze the topic and provide a comprehensive response.\nUse InFavorAgent to assign him the task of providing a supportive perspective on the topic.\nUse AgainstAgent to assign him the task of providing an opposing perspective on the topic.\nAfter analyzing both responses, you must come to a conclusion choosing a single side which had better arguments."), agent.WithSubordinate(inFavorAgent), agent.WithSubordinate(againstAgent), agent.WithChatOptions(chatOptions))
 	if err != nil {
 		panic(err)
 	}
@@ -93,21 +95,44 @@ func collaborate(model *provider.Model) {
 
 func main() {
 
+	// type a struct {
+	// 	X int                 `json:"x"`
+	// 	Y []float64           `json:"y"`
+	// 	Z map[string][]string `json:"z"`
+	// }
+
+	// type b struct {
+	// 	A a `json:"a"`
+	// }
+
+	// schema := jsonschema.Reflect(b{})
+
+	// targetRef := strings.TrimPrefix(schema.Ref, "#/$defs/")
+	// v, ok := schema.Definitions[targetRef]
+	// if !ok {
+	// 	panic(fmt.Sprintf("definition %s not found", targetRef))
+	// }
+	// schema.Properties = v.Properties
+	// delete(schema.Definitions, targetRef)
+
+	// marshaled, _ := json.MarshalIndent(schema, "", "  ")
+	// fmt.Println(string(marshaled))
+
 	client, logger := newLoggingHTTPClient()
 
-	model := openai.NewModel(
-		"zai-org/GLM-4.5",
-		option.WithBaseURL(os.Getenv("BASE_URL")),
-		option.WithAPIKey(os.Getenv("API_KEY")),
-		option.WithHTTPClient(client),
-	)
-
-	// model, _ := ollama.NewModel(
-	// 	"llama3.2:1b",
-	// 	"http://localhost:11434",
-	// 	// os.Getenv("OLLAMA_BASE_URL"),
-	// 	client,
+	// model := openai.NewModel(
+	// 	"zai-org/GLM-4.5",
+	// 	option.WithBaseURL(os.Getenv("BASE_URL")),
+	// 	option.WithAPIKey(os.Getenv("API_KEY")),
+	// 	option.WithHTTPClient(client),
 	// )
+
+	model, _ := ollama.NewModel(
+		"qwen3:8b",
+		"http://localhost:11434",
+		// os.Getenv("OLLAMA_BASE_URL"),
+		client,
+	)
 
 	collaborate(model)
 

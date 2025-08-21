@@ -12,7 +12,7 @@ import (
 func TeamExample() {
 	model := openai.NewModel("gpt-4o")
 
-	jediAgent, err := agent.New(
+	jediAgent, _ := agent.New(
 		model,
 		agent.WithName("jedi_master"),
 		agent.WithDescription("A wise and powerful Jedi Master."),
@@ -23,11 +23,8 @@ func TeamExample() {
 				"Respond to the user's queries like a Jedi Master would.",
 		),
 	)
-	if err != nil {
-		panic(err)
-	}
 
-	sithAgent, err := agent.New(
+	sithAgent, _ := agent.New(
 		model,
 		agent.WithName("sith_lord"),
 		agent.WithDescription("A cunning and powerful Sith Lord."),
@@ -38,11 +35,8 @@ func TeamExample() {
 				"Respond to the user's queries like a Sith Lord would.",
 		),
 	)
-	if err != nil {
-		panic(err)
-	}
 
-	starWarsTeam, err := agent.New(
+	starWarsTeam, _ := agent.New(
 		model,
 		agent.WithName("star_wars_team"),
 		agent.WithDescription("A team of agents representing the Jedi and Sith."),
