@@ -3,6 +3,7 @@ module github.com/yourlogarithm/l337
 go 1.24.5
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.7.0
 	github.com/google/uuid v1.6.0
 	github.com/invopop/jsonschema v0.13.0
 	github.com/ollama/ollama v0.11.4
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.7.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/kr/pretty v0.3.0 // indirect

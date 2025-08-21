@@ -6,9 +6,10 @@ import (
 )
 
 func convertTool(t *tools.Tool) (tool anthropic.ToolUnionParam) {
-	inputSchema := anthropic.ToolInputSchemaParam{
-		Required:   t.Required,
-		Properties: t.Parameters,
+	inputSchema := anthropic.ToolInputSchemaParam{}
+	if t.Schema != nil {
+		inputSchema.Properties = t.Schema.Properties
+		inputSchema.Required = t.Schema.Required
 	}
 	return anthropic.ToolUnionParamOfTool(inputSchema, t.Name)
 }

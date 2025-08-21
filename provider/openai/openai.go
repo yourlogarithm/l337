@@ -2,8 +2,6 @@ package openai
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -37,7 +35,6 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		Tools:               make([]openai.ChatCompletionToolParam, 0, len(request.Tools)),
 		Logprobs:            param.NewOpt(options.Logprobs),
 		MaxCompletionTokens: param.NewOpt(int64(options.MaxCompletionTokens)),
-		MaxTokens:           param.NewOpt(int64(options.MaxTokens)),
 		PresencePenalty:     param.NewOpt(options.PresencePenalty),
 		PromptCacheKey:      param.NewOpt(options.PromptCacheKey),
 		SafetyIdentifier:    param.NewOpt(options.SafetyIdentifier),
@@ -46,6 +43,10 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		ReasoningEffort:     shared.ReasoningEffort(options.ReasoningEffort),
 		ServiceTier:         openai.ChatCompletionNewParamsServiceTier(options.ServiceTier),
 		Stop:                openai.ChatCompletionNewParamsStopUnion{OfStringArray: options.Stop},
+	}
+
+	if options.MaxTokens > 0 {
+		params.MaxTokens = param.NewOpt(int64(options.MaxTokens))
 	}
 
 	if options.FrequencyPenalty != nil {
@@ -124,14 +125,9 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 	response.FinishReason = choice.FinishReason
 
 	for j, toolCall := range choice.Message.ToolCalls {
-		arguments := make(map[string]any)
-		if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &arguments); err != nil {
-			return response, fmt.Errorf("OpenAI Chat: failed to unmarshal tool call arguments: %w", err)
-		}
-
 		response.ToolCalls[j] = chat.ToolCall{
 			ID:        toolCall.ID,
-			Arguments: arguments,
+			Arguments: toolCall.Function.Arguments,
 			Name:      toolCall.Function.Name,
 		}
 	}

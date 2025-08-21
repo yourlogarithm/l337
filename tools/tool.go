@@ -2,43 +2,52 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/invopop/jsonschema"
 )
 
 type Tool struct {
-	// Function that implements the tool's functionality.
-	Callable    ToolCallable
+	// Argument agnostic function wrapper over the user's implementaion.
+	Callable ToolCallable
+
 	Name        string
 	Description string
-	// Map of parameter names to their JSON schema definitions.
-	Parameters map[string]jsonschema.Schema
-	// List of mandatory parameters.
-	Required []string
+
+	// Params schema
+	Schema *jsonschema.Schema
 }
 
-type ToolCallable func(ctx context.Context, toolParams Params) (string, error)
+type ToolCallable func(ctx context.Context, rawArguments string) (string, error)
 
-func NewTool(name, description string, callable ToolCallable) Tool {
+type ToolCallableTyped[T any] func(ctx context.Context, args T) (string, error)
+
+func wrapCallable[T any](fn ToolCallableTyped[T]) ToolCallable {
+	return func(ctx context.Context, rawArguments string) (string, error) {
+		var args T
+		if err := json.Unmarshal([]byte(rawArguments), &args); err != nil {
+			return "", err
+		}
+		return fn(ctx, args)
+	}
+}
+
+func NewTool(name, description string, callable func(ctx context.Context) (string, error)) Tool {
 	return Tool{
+		Callable: func(ctx context.Context, rawArguments string) (string, error) {
+			return callable(ctx)
+		},
 		Name:        name,
 		Description: description,
-		Callable:    callable,
-		Parameters:  make(map[string]jsonschema.Schema),
 	}
 }
 
-// Add a parameter by name, description and required status.
-//
-// The JSON schema for the parameter is inferred from the type `T`.
-func AddParameterFromType[T any](tool *Tool, name string, description string, required bool) {
-	var zero T
-	schema := jsonschema.Reflect(zero)
-	if description != "" {
-		schema.Description = description
-	}
-	tool.Parameters[name] = *schema
-	if required {
-		tool.Required = append(tool.Required, name)
+func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T]) Tool {
+	return Tool{
+		Callable: wrapCallable(callable),
+
+		Name:        name,
+		Description: description,
+		Schema:      jsonschema.Reflect(new(T)),
 	}
 }

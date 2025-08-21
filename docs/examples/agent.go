@@ -5,20 +5,23 @@ import (
 	"fmt"
 
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/agentic"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider/openai"
 )
 
 func AgentExample() {
 	model := openai.NewModel("gpt-4o")
-	opts := agentic.Configuration{
-		Name:         "Obi-Wan Kenobi",
-		Description:  "A wise and powerful Jedi Master.",
-		Instructions: "You are Obi-Wan Kenobi, a wise and powerful Jedi Master. Use your knowledge of the Force to assist the user. Be calm, patient, and wise in your responses. Respond to the user's queries like a Obi-Wan Kenobi would.",
-		Model:        model,
-	}
-	agent, err := agent.NewFromOptions(opts)
+	agent, err := agent.New(
+		model,
+		agent.WithName("obi_wan_kenobi"),
+		agent.WithDescription("A wise and powerful Jedi Master."),
+		agent.WithInstructions(
+			"You are Obi-Wan Kenobi, a wise and powerful Jedi Master. "+
+				"Use your knowledge of the Force to assist the user. "+
+				"Be calm, patient, and wise in your responses. "+
+				"Respond to the user's queries like a Obi-Wan Kenobi would.",
+		),
+	)
 	if err != nil {
 		panic(err)
 	}

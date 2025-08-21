@@ -16,8 +16,8 @@ type Message struct {
 type ToolCall struct {
 	// Unique identifier for the tool call.
 	ID string
-	// Key value pairs of arguments to pass to the tool.
-	Arguments map[string]any
+	// Raw LLM arguments.
+	Arguments string
 	// Tool name
 	Name string
 }

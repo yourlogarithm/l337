@@ -41,8 +41,11 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		Messages: make([]api.Message, len(request.Messages)),
 		Stream:   &stream,
 		Tools:    make([]api.Tool, 0, len(request.Tools)),
-		Think:    &api.ThinkValue{Value: options.ReasoningEffort},
 		Options:  make(map[string]any),
+	}
+
+	if options.ReasoningEffort != "" {
+		req.Think = &api.ThinkValue{Value: options.ReasoningEffort}
 	}
 
 	if options.ResponseFormat != nil {
@@ -90,10 +93,14 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 				if err != nil {
 					id_int = j
 				}
+				arguments := make(map[string]any)
+				if err := json.Unmarshal([]byte(toolCall.Arguments), &arguments); err != nil {
+					return response, err
+				}
 				toolCalls[j] = api.ToolCall{
 					Function: api.ToolCallFunction{
 						Name:      toolCall.Name,
-						Arguments: toolCall.Arguments,
+						Arguments: arguments,
 						Index:     id_int,
 					},
 				}
@@ -111,9 +118,14 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		response.FinishReason = ollamaResp.DoneReason
 		response.Content += ollamaResp.Message.Content
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
+			rawArguments, err := json.Marshal(toolCall.Function.Arguments)
+			if err != nil {
+				return err
+			}
+
 			response.ToolCalls = append(response.ToolCalls, chat.ToolCall{
 				ID:        strconv.Itoa(toolCall.Function.Index),
-				Arguments: toolCall.Function.Arguments,
+				Arguments: string(rawArguments),
 				Name:      toolCall.Function.Name,
 			})
 		}

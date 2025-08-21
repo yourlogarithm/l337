@@ -1,32 +1,29 @@
 package ollama
 
 import (
+	"encoding/json"
+
 	"github.com/ollama/ollama/api"
 	"github.com/yourlogarithm/l337/tools"
 )
 
 func convertTool(t *tools.Tool) api.Tool {
-	parameters := struct {
+	var parameters struct {
 		Type       string                      `json:"type"`
 		Defs       any                         `json:"$defs,omitempty"`
 		Items      any                         `json:"items,omitempty"`
 		Required   []string                    `json:"required"`
 		Properties map[string]api.ToolProperty `json:"properties"`
-	}{
-		Type:     "object",
-		Required: t.Required,
 	}
 
-	parameters.Properties = make(map[string]api.ToolProperty, len(t.Parameters))
-
-	for name, schema := range t.Parameters {
-		ollamaParam := api.ToolProperty{
-			Type:        []string{schema.Type},
-			Items:       schema.Items,
-			Description: schema.Description,
-			Enum:        schema.Enum,
-		}
-		parameters.Properties[name] = ollamaParam
+	if t.Schema != nil {
+		parameters.Type = t.Schema.Type
+		parameters.Defs = t.Schema.Definitions
+		parameters.Items = t.Schema.Items
+		parameters.Required = t.Schema.Required
+		parameters.Properties = make(map[string]api.ToolProperty, t.Schema.Properties.Len())
+		marshaled, _ := json.Marshal(t.Schema.Properties)
+		json.Unmarshal(marshaled, &parameters.Properties)
 	}
 
 	return api.Tool{
