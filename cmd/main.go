@@ -10,57 +10,6 @@ import (
 	"github.com/yourlogarithm/l337/provider/ollama"
 )
 
-// Returns the sum of a and b
-// func add(ctx context.Context, params tools.Params) (string, error) {
-// 	a, err := tools.GetParameter[int](&params, "a")
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	b, err := tools.GetParameter[int](&params, "b")
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return fmt.Sprintf("%d", a+b), nil
-// }
-
-// Returns the difference of a and b
-// func subtract(ctx context.Context, params tools.Params) (string, error) {
-// 	a, err := tools.GetParameter[int](&params, "a")
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	b, err := tools.GetParameter[int](&params, "b")
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return fmt.Sprintf("%d", a-b), nil
-// }
-
-// func math(model *provider.Model) {
-// 	addTool := tools.NewTool("add", "Adds two numbers", add)
-// 	tools.AddParameterFromType[int](&addTool, "a", "The first number to add", true)
-// 	tools.AddParameterFromType[int](&addTool, "b", "The second number to add", true)
-
-// 	subtractTool := tools.NewTool("subtract", "Subtracts two numbers", subtract)
-// 	tools.AddParameterFromType[int](&subtractTool, "a", "The first number to subtract", true)
-// 	tools.AddParameterFromType[int](&subtractTool, "b", "The second number to subtract", true)
-
-// 	agent, err := agent.New(model, agent.WithName("example_agent"), agent.WithDescription("An example agent for demonstration purposes."), agent.WithInstructions("None at all"), agent.WithTool(addTool), agent.WithTool(subtractTool))
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	response, err := agent.Run(context.Background(), []chat.Message{
-// 		{
-// 			Role:    "user",
-// 			Content: "Perform the following operations: 5 + 3, 23 + 42, 66 - 33",
-// 		},
-// 	})
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println("Agent Response:", response.Content())
-// }
-
 func collaborate(model *provider.Model) {
 	chatOptions := provider.ChatOptions{
 		ReasoningEffort: provider.NewReasoningEffortBool(true),
@@ -94,30 +43,6 @@ func collaborate(model *provider.Model) {
 }
 
 func main() {
-
-	// type a struct {
-	// 	X int                 `json:"x"`
-	// 	Y []float64           `json:"y"`
-	// 	Z map[string][]string `json:"z"`
-	// }
-
-	// type b struct {
-	// 	A a `json:"a"`
-	// }
-
-	// schema := jsonschema.Reflect(b{})
-
-	// targetRef := strings.TrimPrefix(schema.Ref, "#/$defs/")
-	// v, ok := schema.Definitions[targetRef]
-	// if !ok {
-	// 	panic(fmt.Sprintf("definition %s not found", targetRef))
-	// }
-	// schema.Properties = v.Properties
-	// delete(schema.Definitions, targetRef)
-
-	// marshaled, _ := json.MarshalIndent(schema, "", "  ")
-	// fmt.Println(string(marshaled))
-
 	client, logger := newLoggingHTTPClient()
 
 	// model := openai.NewModel(
