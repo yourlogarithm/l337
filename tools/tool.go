@@ -13,12 +13,10 @@ import (
 type Tool struct {
 	// Argument agnostic function wrapper over the user's implementaion.
 	Callable ToolCallable
-
-	Name        string
-	Description string
-
-	// Params schema
+	// Parameters Schema
 	Schema *jsonschema.Schema
+	// SkillCard card
+	SkillCard
 }
 
 type ToolCallable func(ctx context.Context, response *run.Response, rawArguments string) (string, error)
@@ -35,17 +33,26 @@ func wrapCallable[T any](fn ToolCallableTyped[T]) ToolCallable {
 	}
 }
 
-func NewTool(name, description string, callable func(ctx context.Context) (string, error)) Tool {
+// Declare tool that does not require any arguments
+func NewTool(name, description string, callable func(ctx context.Context) (string, error), options ...SkillCardOption) Tool {
+	skill := SkillCard{
+		Name:        name,
+		Description: description,
+	}
+	for _, opt := range options {
+		opt.Apply(&skill)
+	}
+
 	return Tool{
 		Callable: func(ctx context.Context, response *run.Response, rawArguments string) (string, error) {
 			return callable(ctx)
 		},
-		Name:        name,
-		Description: description,
+		SkillCard: skill,
 	}
 }
 
-func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T]) (Tool, error) {
+// Declare a tool with required arguments
+func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T], options ...SkillCardOption) (Tool, error) {
 	schema := jsonschema.Reflect(new(T))
 	targetRef := strings.TrimPrefix(schema.Ref, "#/$defs/")
 	if targetRef != "" {
@@ -60,11 +67,17 @@ func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped
 		delete(schema.Definitions, targetRef)
 	}
 
-	return Tool{
-		Callable: wrapCallable(callable),
-
+	skill := SkillCard{
 		Name:        name,
 		Description: description,
-		Schema:      schema,
+	}
+	for _, opt := range options {
+		opt.Apply(&skill)
+	}
+
+	return Tool{
+		Callable:  wrapCallable(callable),
+		SkillCard: skill,
+		Schema:    schema,
 	}, nil
 }

@@ -22,8 +22,6 @@ type Agent struct {
 	// Description of the member
 	// Appends to the system message
 	description string
-	// Skills of the member
-	skills []Skill
 	// Appended to the system message
 	// Wrapped in <instructions> tags
 	instructions string
@@ -53,6 +51,10 @@ func (a *Agent) Description() string {
 	return a.description
 }
 
-func (a *Agent) Skills() []Skill {
-	return a.skills
+func (a *Agent) Skills() []tools.SkillCard {
+	var skills = make([]tools.SkillCard, 0, len(a.tools))
+	for _, tool := range a.tools {
+		skills = append(skills, tool.SkillCard)
+	}
+	return skills
 }
