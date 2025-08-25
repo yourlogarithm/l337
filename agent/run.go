@@ -3,30 +3,51 @@ package agent
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/yourlogarithm/l337/chat"
 	internal_chat "github.com/yourlogarithm/l337/internal/chat"
+	"github.com/yourlogarithm/l337/metrics"
 	"github.com/yourlogarithm/l337/retry"
 	"github.com/yourlogarithm/l337/run"
 	"github.com/yourlogarithm/l337/tools"
 )
 
-func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse run.Response, err error) {
+// Convenience method to run an agent without [run.Parameters] declaration
+func (a *Agent) RunWithParams(ctx context.Context, params ...run.Parameter) (run.Response, error) {
+	var runParams run.Parameters
+	for _, param := range params {
+		if err := param.Apply(&runParams); err != nil {
+			return run.Response{}, err
+		}
+	}
+	if len(runParams.Messages) == 0 {
+		return run.Response{}, fmt.Errorf("no messages provided")
+	}
+
+	runResponse := &run.Response{
+		SessionID: runParams.SessionID,
+		Messages:  runParams.Messages,
+		Metrics:   make(map[uuid.UUID][]metrics.Metrics),
+	}
+
+	return *runResponse, a.run(ctx, runResponse)
+}
+
+func (a *Agent) run(ctx context.Context, runResponse *run.Response) error {
 	if a.retry == nil {
 		a.retry = retry.Default()
 	}
 
-	newMessages := []chat.Message{
-		{
+	if len(runResponse.Messages) == 0 || runResponse.Messages[0].Role != chat.RoleSystem {
+		systemMsg := chat.Message{
 			Role:    chat.RoleSystem,
 			Content: a.ComputeSystemMessage(),
-		},
+		}
+		runResponse.Messages = slices.Insert(runResponse.Messages, 0, systemMsg)
 	}
-
-	newMessages = append(newMessages, messages...)
-
-	runResponse.Messages = append(runResponse.Messages, newMessages...)
 
 	tools := make([]tools.Tool, 0, len(a.tools))
 	for _, tool := range a.tools {
@@ -40,7 +61,7 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 			Tools:    tools,
 		}
 		logger.Debug("agent.run.request", "agent", a.name, "request", req)
-		if err = a.retry.Execute(func() error {
+		if err := a.retry.Execute(func() error {
 			response, err := a.model.Impl.Chat(ctx, &req, &a.chatOptions)
 			if err != nil {
 				return err
@@ -48,7 +69,7 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 			chatResponse = response
 			return nil
 		}); err != nil {
-			return runResponse, err
+			return err
 		}
 		logger.Debug("agent.run.response", "agent", a.name, "response", chatResponse)
 		msg := chat.Message{
@@ -57,6 +78,12 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 			ToolCalls: chatResponse.ToolCalls,
 		}
 		runResponse.Messages = append(runResponse.Messages, msg)
+		chatResponse.Metrics.SessionID = runResponse.SessionID
+		if v, ok := runResponse.Metrics[a.id]; ok {
+			runResponse.Metrics[a.id] = append(v, chatResponse.Metrics)
+		} else {
+			runResponse.Metrics[a.id] = []metrics.Metrics{chatResponse.Metrics}
+		}
 		if len(chatResponse.ToolCalls) > 0 {
 			var wg sync.WaitGroup
 			var mu sync.Mutex
@@ -82,7 +109,7 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 
 					tool, exists := a.tools.Get(toolCall.Name)
 					if exists {
-						result, err := tool.Callable(ctx, toolCall.Arguments)
+						result, err := tool.Callable(ctx, runResponse, toolCall.Arguments)
 						if err != nil {
 							content = "error: " + err.Error()
 							isErr = true
@@ -106,9 +133,9 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 			for _, id := range order {
 				result, exists := results[id]
 				if !exists {
-					return runResponse, fmt.Errorf("tool call result not found for ID: %s", id)
+					return fmt.Errorf("tool call result not found for ID: %s", id)
 				}
-				runResponse.AddMessage(chat.Message{
+				runResponse.Messages = append(runResponse.Messages, chat.Message{
 					Role:    chat.RoleTool,
 					Content: result.Content,
 					Name:    result.ToolCall.Name,
@@ -120,5 +147,5 @@ func (a *Agent) Run(ctx context.Context, messages []chat.Message) (runResponse r
 		}
 	}
 
-	return runResponse, nil
+	return nil
 }

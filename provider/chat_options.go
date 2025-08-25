@@ -48,6 +48,8 @@ type ChatOptions struct {
 	// Anthropic: Custom text sequences that will cause the model to stop generating.
 	Stop []string
 	// Schema specifying the format that the model must output.
+	//
+	// *Supported providers*: OpenAI, Ollama
 	ResponseFormat *jsonschema.Schema
 	// Anthropic: Enable extended thinking. Must be ≥1024 and less than `max_tokens`.
 	Thinking uint64

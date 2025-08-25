@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -117,7 +118,9 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 	}
 
 	logger.Debug("chat.request", "model", o.model, "messages", request.Messages, "tools", request.Tools)
+	start := time.Now()
 	chatCompletion, err := o.client.Chat.Completions.New(ctx, params)
+	totalDuration := time.Since(start)
 	if err != nil {
 		return response, err
 	}
@@ -131,6 +134,7 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 	response.Refusal = choice.Message.Refusal
 	response.ToolCalls = make([]chat.ToolCall, len(choice.Message.ToolCalls))
 	response.FinishReason = choice.FinishReason
+	response.Metrics = convertMetrics(&chatCompletion.Usage, totalDuration)
 
 	for j, toolCall := range choice.Message.ToolCalls {
 		response.ToolCalls[j] = chat.ToolCall{

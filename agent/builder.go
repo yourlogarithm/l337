@@ -22,11 +22,11 @@ func New(model *provider.Model, options ...AgentOption) (*Agent, error) {
 		return nil, fmt.Errorf("member must have a model")
 	}
 
-	defaultID := uuid.NewString()
+	defaultID := uuid.New()
 
 	agent := &Agent{
 		id:           defaultID,
-		name:         defaultID,
+		name:         defaultID.String(),
 		model:        model,
 		tools:        make(tools.Toolkit),
 		subordinates: make([]AgentImpl, 0),
@@ -45,9 +45,9 @@ func New(model *provider.Model, options ...AgentOption) (*Agent, error) {
 	return agent, nil
 }
 
-func WithID(id string) AgentOption {
-	if id == "" {
-		id = uuid.NewString()
+func WithID(id uuid.UUID) AgentOption {
+	if id == uuid.Nil {
+		id = uuid.New()
 	}
 	return AgentOptionFunc(func(a *Agent) error {
 		a.id = id

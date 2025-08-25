@@ -1,13 +1,15 @@
 package run
 
-import "github.com/yourlogarithm/l337/chat"
+import (
+	"github.com/google/uuid"
+	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/metrics"
+)
 
 type Response struct {
-	Messages []chat.Message
-}
-
-func (r *Response) AddMessage(msg chat.Message) {
-	r.Messages = append(r.Messages, msg)
+	SessionID uuid.UUID
+	Messages  []chat.Message
+	Metrics   map[uuid.UUID][]metrics.Metrics
 }
 
 // Content of the last message in the response.

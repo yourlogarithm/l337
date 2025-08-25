@@ -6,7 +6,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/metrics"
+	"github.com/yourlogarithm/l337/run"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -17,28 +20,33 @@ type delegateTaskParams struct {
 	ExpectedOutput string `json:"expected_output" jsonschema:"required,description=Expected output from the subordinates"`
 }
 
-func addDelegateTaskTool(agent *Agent) {
-	delegateTask := func(ctx context.Context, params delegateTaskParams) (string, error) {
-		logger.Debug("delegate_task", "params", params)
+func addDelegateTaskTool(agent *Agent) error {
+	const delegate_task_tool_name = "delegate_task"
 
-		if len(params.Names) == 0 {
+	if agent == nil {
+		return fmt.Errorf("agent is nil")
+	}
+
+	delegateTask := func(ctx context.Context, response *run.Response, delegateTaskParams delegateTaskParams) (string, error) {
+		logger.Debug(delegate_task_tool_name, "params", delegateTaskParams)
+
+		if len(delegateTaskParams.Names) == 0 {
 			return "", fmt.Errorf("no subordinates specified")
 		}
 
-		if params.ExpectedOutput == "" {
+		if delegateTaskParams.ExpectedOutput == "" {
 			return "", fmt.Errorf("no expected output specified")
 		}
 
-		nameSet := make(map[string]struct{}, len(params.Names))
-		for _, name := range params.Names {
+		nameSet := make(map[string]struct{}, len(delegateTaskParams.Names))
+		for _, name := range delegateTaskParams.Names {
 			nameSet[name] = struct{}{}
 		}
 
 		msg := chat.Message{
 			Role:    chat.RoleUser,
-			Content: params.ExpectedOutput,
+			Content: delegateTaskParams.ExpectedOutput,
 		}
-		wrapped := []chat.Message{msg}
 
 		var wg sync.WaitGroup
 
@@ -49,11 +57,23 @@ func addDelegateTaskTool(agent *Agent) {
 				wg.Add(1)
 				go func(sub AgentImpl) {
 					defer wg.Done()
-					response, err := sub.Run(ctx, wrapped)
+					subordinateRunResponse := &run.Response{
+						SessionID: response.SessionID,
+						Messages:  []chat.Message{msg},
+						Metrics:   make(map[uuid.UUID][]metrics.Metrics),
+					}
+					err := sub.run(ctx, subordinateRunResponse)
+					for id, metrics := range subordinateRunResponse.Metrics {
+						if v, ok := response.Metrics[id]; ok {
+							response.Metrics[id] = append(v, metrics...)
+						} else {
+							response.Metrics[id] = metrics
+						}
+					}
 					if err != nil {
 						sb.WriteString(fmt.Sprintf("(%s) Error: %s\n", sub.Name(), err.Error()))
 					} else {
-						sb.WriteString(fmt.Sprintf("(%s) Response: %s\n", sub.Name(), response.Content()))
+						sb.WriteString(fmt.Sprintf("(%s) Response: %s\n", sub.Name(), subordinateRunResponse.Content()))
 					}
 				}(agent.subordinates[i])
 			}
@@ -64,10 +84,12 @@ func addDelegateTaskTool(agent *Agent) {
 		return sb.String(), nil
 	}
 
-	tool, err := tools.NewToolWithArgs("delegate_task", "Delegates the task to one or more subordinates", delegateTask)
+	tool, err := tools.NewToolWithArgs(delegate_task_tool_name, "Delegates the task to one or more subordinates", delegateTask)
 	if err != nil {
 		panic(err)
 	}
 
 	agent.tools.AddTool(tool)
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"github.com/google/uuid"
 	"github.com/yourlogarithm/l337/internal/logging"
 	"github.com/yourlogarithm/l337/provider"
 	"github.com/yourlogarithm/l337/retry"
@@ -12,7 +13,7 @@ var logger = logging.SetupLogger("agent")
 type Agent struct {
 	// Unique identifier for the member
 	// If not set, a random UUID will be generated
-	id string
+	id uuid.UUID
 	// Appended to the system message
 	// If not set, an error will be returned as soon as `Initialize` is called
 	name string

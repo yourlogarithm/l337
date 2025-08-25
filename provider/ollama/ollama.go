@@ -117,6 +117,10 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		logger.Debug("chat.response", "model", o.model, "response", ollamaResp)
 		response.FinishReason = ollamaResp.DoneReason
 		response.Content += ollamaResp.Message.Content
+
+		metrics := convertMetrics(&ollamaResp.Metrics)
+		response.Metrics.Add(&metrics)
+
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
 			rawArguments, err := json.Marshal(toolCall.Function.Arguments)
 			if err != nil {

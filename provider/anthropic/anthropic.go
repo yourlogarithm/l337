@@ -88,7 +88,9 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 	}
 
 	logger.Debug("chat.request", "model", a.model, "messages", request.Messages, "tools", request.Tools)
+	start := time.Now()
 	message, err := a.client.Messages.New(ctx, params)
+	totalDuration := time.Since(start)
 	if err != nil {
 		return response, err
 	}
@@ -97,6 +99,7 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 	response.ID = message.ID
 	response.Created = time.Now().Unix()
 	response.FinishReason = string(message.StopReason)
+	response.Metrics = convertMetrics(&message.Usage, totalDuration)
 
 	for _, contentBlock := range message.Content {
 		switch contentBlock.Type {

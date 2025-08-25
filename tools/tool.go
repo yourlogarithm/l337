@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/invopop/jsonschema"
+	"github.com/yourlogarithm/l337/run"
 )
 
 type Tool struct {
@@ -20,23 +21,23 @@ type Tool struct {
 	Schema *jsonschema.Schema
 }
 
-type ToolCallable func(ctx context.Context, rawArguments string) (string, error)
+type ToolCallable func(ctx context.Context, response *run.Response, rawArguments string) (string, error)
 
-type ToolCallableTyped[T any] func(ctx context.Context, args T) (string, error)
+type ToolCallableTyped[T any] func(ctx context.Context, response *run.Response, args T) (string, error)
 
 func wrapCallable[T any](fn ToolCallableTyped[T]) ToolCallable {
-	return func(ctx context.Context, rawArguments string) (string, error) {
+	return func(ctx context.Context, response *run.Response, rawArguments string) (string, error) {
 		var args T
 		if err := json.Unmarshal([]byte(rawArguments), &args); err != nil {
 			return "", err
 		}
-		return fn(ctx, args)
+		return fn(ctx, response, args)
 	}
 }
 
 func NewTool(name, description string, callable func(ctx context.Context) (string, error)) Tool {
 	return Tool{
-		Callable: func(ctx context.Context, rawArguments string) (string, error) {
+		Callable: func(ctx context.Context, response *run.Response, rawArguments string) (string, error) {
 			return callable(ctx)
 		},
 		Name:        name,

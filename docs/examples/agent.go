@@ -7,6 +7,7 @@ import (
 	"github.com/yourlogarithm/l337/agent"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider/openai"
+	"github.com/yourlogarithm/l337/run"
 )
 
 func AgentExample() {
@@ -26,13 +27,10 @@ func AgentExample() {
 		panic(err)
 	}
 
-	messages := []chat.Message{
-		{
-			Role:    chat.RoleUser,
-			Content: "What was your greatest failure, and what did you learn from it?",
-		},
-	}
-	response, err := agent.Run(context.Background(), messages)
+	response, err := agent.RunWithParams(
+		context.Background(),
+		run.WithMessage(chat.RoleUser, "What was your greatest failure, and what did you learn from it?"),
+	)
 	if err != nil {
 		panic(err)
 	}
