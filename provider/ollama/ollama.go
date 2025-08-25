@@ -119,6 +119,9 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 		response.Content += ollamaResp.Message.Content
 
 		metrics := convertMetrics(&ollamaResp.Metrics)
+		if response.Metrics.Timestamp.IsZero() {
+			response.Metrics.Timestamp = metrics.Timestamp
+		}
 		response.Metrics.Add(&metrics)
 
 		for _, toolCall := range ollamaResp.Message.ToolCalls {

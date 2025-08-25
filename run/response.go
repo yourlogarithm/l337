@@ -7,9 +7,9 @@ import (
 )
 
 type Response struct {
-	SessionID uuid.UUID
-	Messages  []chat.Message
-	Metrics   map[uuid.UUID][]metrics.Metrics
+	SessionID uuid.UUID                       `json:"session_id"`
+	Messages  []chat.Message                  `json:"messages"`
+	Metrics   map[uuid.UUID][]metrics.Metrics `json:"metrics"`
 }
 
 // Content of the last message in the response.

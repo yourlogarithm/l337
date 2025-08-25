@@ -8,8 +8,8 @@ import (
 )
 
 type AgentImpl interface {
-	Name() string
-	Description() string
-	Skills() []tools.SkillCard
-	run(context.Context, *run.Response) error
+	Name() (string, error)
+	Description() (string, error)
+	Skills() ([]tools.SkillCard, error)
+	Run(context.Context, *run.Response) error
 }

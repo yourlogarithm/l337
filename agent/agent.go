@@ -43,18 +43,18 @@ type Agent struct {
 	chatOptions  provider.ChatOptions
 }
 
-func (a *Agent) Name() string {
-	return a.name
+func (a *Agent) Name() (string, error) {
+	return a.name, nil
 }
 
-func (a *Agent) Description() string {
-	return a.description
+func (a *Agent) Description() (string, error) {
+	return a.description, nil
 }
 
-func (a *Agent) Skills() []tools.SkillCard {
+func (a *Agent) Skills() ([]tools.SkillCard, error) {
 	var skills = make([]tools.SkillCard, 0, len(a.tools))
 	for _, tool := range a.tools {
 		skills = append(skills, tool.SkillCard)
 	}
-	return skills
+	return skills, nil
 }
