@@ -53,39 +53,30 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 			return response, fmt.Errorf("invalid reasoning effort: %v", options.ReasoningEffort)
 		}
 	}
-
 	if options.MaxTokens > 0 {
 		params.MaxTokens = param.NewOpt(int64(options.MaxTokens))
 	}
-
 	if options.FrequencyPenalty != nil {
 		params.FrequencyPenalty = param.NewOpt(*options.FrequencyPenalty)
 	}
-
-	if options.N != nil {
-		params.N = param.NewOpt(int64(*options.N))
-	}
-
+	// if options.N != nil {
+	// 	params.N = param.NewOpt(int64(*options.N))
+	// }
 	if options.Seed != nil {
 		params.Seed = param.NewOpt(int64(*options.Seed))
 	}
-
 	if options.Temperature != nil {
 		params.Temperature = param.NewOpt(*options.Temperature)
 	}
-
 	if options.TopLogprobs != nil {
 		params.TopLogprobs = param.NewOpt(int64(*options.TopLogprobs))
 	}
-
 	if options.TopP != nil {
 		params.TopP = param.NewOpt(*options.TopP)
 	}
-
 	if options.ParallelToolCalls != nil {
 		params.ParallelToolCalls = param.NewOpt(*options.ParallelToolCalls)
 	}
-
 	if options.ResponseFormat != nil {
 		params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{Schema: options.ResponseFormat}}}
 	}
@@ -127,7 +118,7 @@ func (o *openAIProvider) Chat(ctx context.Context, request *internal_chat.Reques
 	logger.Debug("chat.response", "model", o.model, "response", chatCompletion)
 
 	response.ID = chatCompletion.ID
-	response.Created = chatCompletion.Created
+	response.Created = time.Unix(chatCompletion.Created, 0)
 	choice := chatCompletion.Choices[0]
 
 	response.Content = choice.Message.Content

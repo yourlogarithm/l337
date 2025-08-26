@@ -46,7 +46,7 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 	}
 
 	if options.TopK != nil {
-		params.TopK = param.NewOpt(*options.TopK)
+		params.TopK = param.NewOpt(int64(*options.TopK))
 	}
 
 	if options.TopP != nil {
@@ -97,7 +97,7 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 
 	logger.Debug("chat.response", "model", a.model, "response", message)
 	response.ID = message.ID
-	response.Created = time.Now().Unix()
+	response.Created = time.Now()
 	response.FinishReason = string(message.StopReason)
 	response.Metrics = convertMetrics(&message.Usage, totalDuration)
 
@@ -114,6 +114,8 @@ func (a *anthropicProvider) Chat(ctx context.Context, request *internal_chat.Req
 				return response, err
 			}
 			response.ToolCalls = append(response.ToolCalls, toolCall)
+		case "thinking":
+			response.Reasoning += contentBlock.Thinking
 		default:
 			return response, fmt.Errorf("unsupported content block type: %s", contentBlock.Type)
 		}

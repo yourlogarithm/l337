@@ -16,7 +16,7 @@ type ChatOptions struct {
 	// The maximum number of tokens to generate before stopping.
 	MaxTokens uint
 	// OpenAI: How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.
-	N *uint
+	// N *uint
 	// OpenAI: Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
 	PresencePenalty float64
 	// OpenAI: This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same `seed` and parameters should return the same result. Determinism is not guaranteed, and you should refer to the `system_fingerprint` response parameter to monitor changes in the backend.
@@ -25,12 +25,13 @@ type ChatOptions struct {
 	// Anthropic: Amount of randomness injected into the response. Defaults to `1.0`. Ranges from `0.0` to `1.0`. Use `temperature` closer to `0.0` for analytical / multiple choice, and closer to `1.0` for creative and generative tasks. Note that even with `temperature` of `0.0`, the results will not be fully deterministic.
 	Temperature *float64
 	// OpenAI: An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. `logprobs` must be set to `true` if this parameter is used.
-	TopLogprobs *int8
+	TopLogprobs *int32
 	TopP        *float64
-	TopK        *int64
+	TopK        *float32
 	// OpenAI: Whether to enable [parallel function calling](https://platform.openai.com/docs/guides/function-calling#configuring-parallel-function-calling) during tool use.
 	ParallelToolCalls *bool
 	// OpenAI: Cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field.
+	// Google:  Resource name of a context cache that can be used in subsequent requests.
 	PromptCacheKey string
 	// OpenAI: A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a string that uniquely identifies each user. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers).
 	SafetyIdentifier string
@@ -55,6 +56,10 @@ type ChatOptions struct {
 	Thinking uint64
 	// Ollama: How long the model will stay loaded into memory following the request.
 	KeepAlive *time.Duration
+	// Google:
+	//     - `text/plain` (default)
+	//     - `application/json`
+	ResponseMIMEType string
 }
 
 // Only one can be set

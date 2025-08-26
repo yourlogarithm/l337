@@ -8,6 +8,7 @@ const (
 	RoleSystem    Role = "system"
 	RoleTool      Role = "tool"
 	RoleUser      Role = "user"
+	RoleModel     Role = "model"
 )
 
 func (r Role) String() string {

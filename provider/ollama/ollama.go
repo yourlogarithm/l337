@@ -115,7 +115,11 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *internal_chat.Reques
 
 	callback := func(ollamaResp api.ChatResponse) error {
 		logger.Debug("chat.response", "model", o.model, "response", ollamaResp)
+		if !ollamaResp.CreatedAt.IsZero() {
+			response.Created = ollamaResp.CreatedAt
+		}
 		response.FinishReason = ollamaResp.DoneReason
+		response.Reasoning += ollamaResp.Message.Thinking
 		response.Content += ollamaResp.Message.Content
 
 		metrics := convertMetrics(&ollamaResp.Metrics)
