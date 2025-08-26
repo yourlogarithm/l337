@@ -6,7 +6,7 @@ import (
 )
 
 // Build the system message for the Agent
-func (a *Agent) ComputeSystemMessage() string {
+func (a *Agent) ComputeSystemMessage() (string, error) {
 	var sb strings.Builder
 
 	appendSystemString := func(s, tag string) {
@@ -39,17 +39,27 @@ func (a *Agent) ComputeSystemMessage() string {
 			subordinatesSb.WriteString(strconv.Itoa(i + 1))
 			subordinatesSb.WriteString(":\n")
 
+			name, err := subordinate.Name()
+			if err != nil {
+				return "", err
+			}
 			subordinatesSb.WriteString("   - Name: ")
-			subordinatesSb.WriteString(subordinate.Name())
+			subordinatesSb.WriteString(name)
 
-			desc := subordinate.Description()
+			desc, err := subordinate.Description()
+			if err != nil {
+				return "", err
+			}
 			if desc != "" {
 				subordinatesSb.WriteString("   - Description: ")
 				subordinatesSb.WriteString(desc)
 				subordinatesSb.WriteByte('\n')
 			}
 
-			skills := subordinate.Skills()
+			skills, err := subordinate.Skills()
+			if err != nil {
+				return "", err
+			}
 			if len(skills) > 0 {
 				subordinatesSb.WriteString("   - Member tools:\n")
 				for _, skill := range skills {
@@ -72,5 +82,5 @@ func (a *Agent) ComputeSystemMessage() string {
 		appendSystemString(taskDelegationSb.String(), "task_delegation")
 	}
 
-	return sb.String()
+	return sb.String(), nil
 }

@@ -53,16 +53,20 @@ func addDelegateTaskTool(agent *Agent) error {
 		var sb strings.Builder
 
 		for i := range agent.subordinates {
-			if _, exists := nameSet[agent.subordinates[i].Name()]; exists {
+			name, err := agent.subordinates[i].Name()
+			if err != nil {
+				return "", err
+			}
+			if _, exists := nameSet[name]; exists {
 				wg.Add(1)
-				go func(sub AgentImpl) {
+				go func(sub AgentImpl, name string) {
 					defer wg.Done()
 					subordinateRunResponse := &run.Response{
 						SessionID: response.SessionID,
 						Messages:  []chat.Message{msg},
 						Metrics:   make(map[uuid.UUID][]metrics.Metrics),
 					}
-					err := sub.run(ctx, subordinateRunResponse)
+					err := sub.Run(ctx, subordinateRunResponse)
 					for id, metrics := range subordinateRunResponse.Metrics {
 						if v, ok := response.Metrics[id]; ok {
 							response.Metrics[id] = append(v, metrics...)
@@ -71,11 +75,11 @@ func addDelegateTaskTool(agent *Agent) error {
 						}
 					}
 					if err != nil {
-						sb.WriteString(fmt.Sprintf("(%s) Error: %s\n", sub.Name(), err.Error()))
+						sb.WriteString(fmt.Sprintf("(%s) Error: %s\n", name, err.Error()))
 					} else {
-						sb.WriteString(fmt.Sprintf("(%s) Response: %s\n", sub.Name(), subordinateRunResponse.Content()))
+						sb.WriteString(fmt.Sprintf("(%s) Response: %s\n", name, subordinateRunResponse.Content()))
 					}
-				}(agent.subordinates[i])
+				}(agent.subordinates[i], name)
 			}
 		}
 

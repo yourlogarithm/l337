@@ -1,10 +1,10 @@
 package tools
 
 type SkillCard struct {
-	Name        string
-	Description string
-	Tags        []string
-	Examples    []string
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Tags        []string `json:"tags"`
+	Examples    []string `json:"examples"`
 }
 
 type SkillCardOption interface {

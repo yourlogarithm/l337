@@ -33,18 +33,22 @@ func (a *Agent) RunWithParams(ctx context.Context, params ...run.Parameter) (run
 		Metrics:   make(map[uuid.UUID][]metrics.Metrics),
 	}
 
-	return *runResponse, a.run(ctx, runResponse)
+	return *runResponse, a.Run(ctx, runResponse)
 }
 
-func (a *Agent) run(ctx context.Context, runResponse *run.Response) error {
+func (a *Agent) Run(ctx context.Context, runResponse *run.Response) error {
 	if a.retry == nil {
 		a.retry = retry.Default()
 	}
 
 	if len(runResponse.Messages) == 0 || runResponse.Messages[0].Role != chat.RoleSystem {
+		content, err := a.ComputeSystemMessage()
+		if err != nil {
+			return err
+		}
 		systemMsg := chat.Message{
 			Role:    chat.RoleSystem,
-			Content: a.ComputeSystemMessage(),
+			Content: content,
 		}
 		runResponse.Messages = slices.Insert(runResponse.Messages, 0, systemMsg)
 	}
