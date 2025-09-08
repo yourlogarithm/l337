@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/yourlogarithm/l337/agent"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
 )
@@ -35,7 +35,10 @@ func (c *RemoteAgent) Run(ctx context.Context, runResponse *chat.RunResponse) er
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&runResponse); err != nil {
-		return fmt.Errorf("failed to decode run response: %w", err)
+		return ErrServerResponse{
+			Err:        err,
+			StatusCode: resp.StatusCode,
+		}
 	}
 
 	return nil
@@ -49,7 +52,7 @@ func (c *RemoteAgent) RunWithParams(ctx context.Context, params ...chat.Paramete
 		}
 	}
 	if len(runParams.Messages) == 0 {
-		return chat.RunResponse{}, fmt.Errorf("no messages provided")
+		return chat.RunResponse{}, agent.ErrBuilderParams{Param: "Messages", Msg: "at least one message is required to run chat"}
 	}
 
 	runResponse := &chat.RunResponse{

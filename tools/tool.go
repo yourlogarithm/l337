@@ -58,7 +58,7 @@ func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped
 	if targetRef != "" {
 		v, ok := schema.Definitions[targetRef]
 		if !ok {
-			return Tool{}, fmt.Errorf("definition %s not found", targetRef)
+			return Tool{}, ErrToolCreation{Message: fmt.Sprintf("failed to find definition for %s", targetRef)}
 		}
 		schema.Items = v.Items
 		schema.Properties = v.Properties

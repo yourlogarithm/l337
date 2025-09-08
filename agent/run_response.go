@@ -1,8 +1,6 @@
 package agent
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
@@ -16,7 +14,10 @@ func BuildRunResponse(params ...chat.Parameter) (*chat.RunResponse, error) {
 		}
 	}
 	if len(runParams.Messages) == 0 {
-		return nil, fmt.Errorf("no messages provided")
+		return nil, ErrBuilderParams{
+			Param: "Messages",
+			Msg:   "at least one message is required",
+		}
 	}
 
 	runResponse := chat.RunResponse{

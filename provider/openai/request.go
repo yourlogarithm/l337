@@ -30,7 +30,7 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 		if level, ok := options.ReasoningEffort.AsLevel(); ok {
 			params.ReasoningEffort = shared.ReasoningEffort(level)
 		} else {
-			return params, fmt.Errorf("invalid reasoning effort: %v", options.ReasoningEffort)
+			return params, ErrParams{Param: "ReasoningEffort", Msg: fmt.Sprintf("invalid reasoning effort: %v", options.ReasoningEffort)}
 		}
 	}
 	if options.MaxTokens > 0 {
@@ -82,7 +82,7 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 		case chat.RoleTool:
 			openaiMsg = openai.ToolMessage(msg.Content, msg.Name)
 		default:
-			return params, provider.NewUnknownRoleError(msg.Role.String())
+			return params, provider.ErrUnknownRole{Role: msg.Role.String()}
 		}
 		params.Messages = append(params.Messages, openaiMsg)
 	}

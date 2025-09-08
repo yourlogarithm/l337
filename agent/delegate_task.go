@@ -23,7 +23,10 @@ func addDelegateTaskTool(agent *Agent) error {
 	const delegate_task_tool_name = "delegate_task"
 
 	if agent == nil {
-		return fmt.Errorf("agent is nil")
+		return ErrBuilderParams{
+			Param: "agent",
+			Msg:   "agent is required",
+		}
 	}
 
 	delegateTask := func(ctx context.Context, response *chat.RunResponse, delegateTaskParams delegateTaskParams) (string, error) {

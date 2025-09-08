@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -83,7 +82,7 @@ func (c *RemoteAgent) RunStreaming(ctx context.Context, runResponse *chat.RunRes
 					return
 				}
 				if responseChunk.Error != "" {
-					ch.SendErr(errors.New(responseChunk.Error))
+					ch.SendErr(ErrChunkMessage{Message: responseChunk.Error})
 					return
 				} else {
 					ch.Send(responseChunk.Chunk)
@@ -94,7 +93,7 @@ func (c *RemoteAgent) RunStreaming(ctx context.Context, runResponse *chat.RunRes
 					return
 				}
 			default:
-				ch.SendErr(errors.New("unknown event type: " + event))
+				ch.SendErr(ErrUnknownEvent{Event: event})
 				return
 			}
 		}

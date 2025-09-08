@@ -3,7 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 
@@ -26,9 +26,15 @@ func checkError(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
 		var content bytes.Buffer
 		if _, err := content.ReadFrom(resp.Body); err != nil {
-			return fmt.Errorf("unexpected status code - %d: %w", resp.StatusCode, err)
+			return ErrServerResponse{
+				StatusCode: resp.StatusCode,
+				Err:        err,
+			}
 		}
-		return fmt.Errorf("unexpected status code - %d: %s", resp.StatusCode, content.String())
+		return ErrServerResponse{
+			StatusCode: resp.StatusCode,
+			Err:        errors.New(content.String()),
+		}
 	}
 	return nil
 }

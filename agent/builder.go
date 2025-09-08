@@ -1,8 +1,6 @@
 package agent
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider"
@@ -19,7 +17,10 @@ func (s AgentOptionFunc) Apply(r *Agent) error { return s(r) }
 
 func New(model *provider.Model, options ...AgentOption) (*Agent, error) {
 	if model == nil {
-		return nil, fmt.Errorf("member must have a model")
+		return nil, ErrBuilderParams{
+			Param: "model",
+			Msg:   "model is required",
+		}
 	}
 
 	defaultID := uuid.New()

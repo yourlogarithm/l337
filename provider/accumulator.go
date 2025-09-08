@@ -10,7 +10,7 @@ func (acc *ContentAccumulator) AddChunk(chunk *Response) error {
 	if acc.ID == "" {
 		acc.ID = chunk.ID
 	} else if acc.ID != chunk.ID && chunk.ID != "" {
-		return &ChunkAdditionError{Accumulator: acc.Response, Chunk: chunk}
+		return ErrChunkAddition{Accumulator: acc.Response, Chunk: chunk}
 	}
 
 	acc.Created = chunk.Created
@@ -30,7 +30,7 @@ func (acc *ContentAccumulator) AddChunk(chunk *Response) error {
 		if accCall.ID == "" {
 			*accCall = *call
 		} else if accCall.ID != call.ID && call.ID != "" {
-			return &ChunkAdditionError{Accumulator: acc.Response, Chunk: chunk}
+			return &ErrChunkAddition{Accumulator: acc.Response, Chunk: chunk}
 		}
 		if call.Name != "" {
 			accCall.Name = call.Name

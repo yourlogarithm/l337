@@ -66,11 +66,15 @@ func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunRespons
 	logger.Debug("agent.run.response", "agent", a.name, "response", chatResponse)
 
 	if chatResponse == nil {
-		return false, fmt.Errorf("nil response from model")
+		return false, ErrModelResponse{
+			Msg: "model response is nil",
+		}
 	}
 
 	if chatResponse.FinishReason == "" {
-		return false, fmt.Errorf("response has no finish reason")
+		return false, ErrModelResponse{
+			Msg: "response has no finish reason",
+		}
 	}
 
 	msg := chat.Message{
@@ -140,7 +144,9 @@ func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunRespons
 		for _, id := range order {
 			result, exists := results[id]
 			if !exists {
-				return false, fmt.Errorf("tool call result not found for ID: %s", id)
+				return false, ErrModelResponse{
+					Msg: fmt.Sprintf("tool call result not found for ID: %s", id),
+				}
 			}
 			runResponse.Messages = append(runResponse.Messages, chat.Message{
 				Role:    chat.RoleTool,
