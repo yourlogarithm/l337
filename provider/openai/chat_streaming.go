@@ -44,11 +44,11 @@ func (o *openAIProvider) ChatStreaming(
 
 			choice := chunk.Choices[0]
 			response := provider.Response{
-				ID:           chunk.ID,
-				Created:      time.Unix(chunk.Created, 0),
-				Content:      choice.Delta.Content,
-				Refusal:      choice.Delta.Refusal,
-				Reasoning:    choice.Delta.ReasoningContent,
+				ID:      chunk.ID,
+				Created: time.Unix(chunk.Created, 0),
+				Content: choice.Delta.Content,
+				Refusal: choice.Delta.Refusal,
+				// Reasoning:    choice.Delta.ReasoningContent,
 				FinishReason: choice.FinishReason,
 			}
 			for _, toolCall := range choice.Delta.ToolCalls {
