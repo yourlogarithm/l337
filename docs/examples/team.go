@@ -7,7 +7,6 @@ import (
 	"github.com/yourlogarithm/l337/agent"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider/openai"
-	"github.com/yourlogarithm/l337/run"
 )
 
 func TeamExample() {
@@ -54,7 +53,7 @@ func TeamExample() {
 
 	response, err := starWarsTeam.RunWithParams(
 		context.Background(),
-		run.WithMessage(chat.RoleUser, "Who was the most powerful Jedi?"),
+		chat.WithMessage(chat.RoleUser, "Who was the most powerful Jedi?"),
 	)
 	if err != nil {
 		panic(err)
@@ -63,7 +62,7 @@ func TeamExample() {
 
 	response, err = starWarsTeam.RunWithParams(
 		context.Background(),
-		run.WithMessage(chat.RoleUser, "Who was the most powerful Sith?"),
+		chat.WithMessage(chat.RoleUser, "Who was the most powerful Sith?"),
 	)
 	if err != nil {
 		panic(err)

@@ -1,16 +1,12 @@
-package remote
+package client
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/google/uuid"
-	"github.com/yourlogarithm/l337/metrics"
-	"github.com/yourlogarithm/l337/run"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -19,7 +15,7 @@ type RemoteAgent struct {
 	HttpClient *http.Client
 }
 
-func DefaultClient(baseUrl string) *RemoteAgent {
+func Default(baseUrl string) *RemoteAgent {
 	return &RemoteAgent{
 		BaseURL:    baseUrl,
 		HttpClient: http.DefaultClient,
@@ -87,47 +83,4 @@ func (c *RemoteAgent) Skills() (skills []tools.SkillCard, err error) {
 		return nil, err
 	}
 	return skills, nil
-}
-
-func (c *RemoteAgent) Run(ctx context.Context, runResponse *run.Response) error {
-	body, err := json.Marshal(runResponse)
-	if err != nil {
-		return err
-	}
-
-	resp, err := c.HttpClient.Post(c.BaseURL+"/run", "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if err := checkError(resp); err != nil {
-		return err
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&runResponse); err != nil {
-		return fmt.Errorf("failed to decode run response: %w", err)
-	}
-
-	return nil
-}
-
-func (r *RemoteAgent) RunWithParams(ctx context.Context, params ...run.Parameter) (run.Response, error) {
-	var runParams run.Parameters
-	for _, param := range params {
-		if err := param.Apply(&runParams); err != nil {
-			return run.Response{}, err
-		}
-	}
-	if len(runParams.Messages) == 0 {
-		return run.Response{}, fmt.Errorf("no messages provided")
-	}
-
-	runResponse := &run.Response{
-		SessionID: runParams.SessionID,
-		Messages:  runParams.Messages,
-		Metrics:   make(map[uuid.UUID][]metrics.Metrics),
-	}
-
-	return *runResponse, r.Run(ctx, runResponse)
 }

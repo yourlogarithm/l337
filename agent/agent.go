@@ -2,9 +2,9 @@ package agent
 
 import (
 	"github.com/google/uuid"
+	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/internal/logging"
 	"github.com/yourlogarithm/l337/provider"
-	"github.com/yourlogarithm/l337/retry"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -37,10 +37,10 @@ type Agent struct {
 	tools tools.Toolkit
 	// Retry options for the LLM requests
 	// If not set, defaults to `retry.Default()`
-	retry *retry.Options
+	// retry *retry.Options
 	// List of subordinate agents that this agent can delegate tasks to
 	subordinates []AgentImpl
-	chatOptions  provider.ChatOptions
+	chatOptions  chat.Options
 }
 
 func (a *Agent) Name() (string, error) {

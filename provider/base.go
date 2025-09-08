@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/yourlogarithm/l337/internal/chat"
+	"github.com/yourlogarithm/l337/chat"
 )
 
 type Model struct {
@@ -16,5 +16,6 @@ type Model struct {
 }
 
 type ModelImpl interface {
-	Chat(ctx context.Context, request *chat.Request, options *ChatOptions) (chat.Response, error)
+	Chat(context.Context, *Request, *chat.Options) (Response, error)
+	ChatStreaming(context.Context, *Request, *chat.Options) (ResponseChannel, error)
 }

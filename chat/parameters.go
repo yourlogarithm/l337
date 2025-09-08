@@ -1,12 +1,11 @@
-package run
+package chat
 
 import (
 	"github.com/google/uuid"
-	"github.com/yourlogarithm/l337/chat"
 )
 
 type Parameters struct {
-	Messages  []chat.Message
+	Messages  []Message
 	SessionID uuid.UUID
 }
 
@@ -25,9 +24,9 @@ func WithSessionID(sessionID uuid.UUID) Parameter {
 	})
 }
 
-func WithMessage(role chat.Role, content string) Parameter {
+func WithMessage(role Role, content string) Parameter {
 	return ParameterFunc(func(p *Parameters) error {
-		p.Messages = append(p.Messages, chat.Message{
+		p.Messages = append(p.Messages, Message{
 			Role:    role,
 			Content: content,
 		})

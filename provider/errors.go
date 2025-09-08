@@ -12,3 +12,12 @@ var ErrUnknownRole = errors.New("unknown role")
 func NewUnknownRoleError(role string) error {
 	return fmt.Errorf("%w: %s", ErrUnknownRole, role)
 }
+
+type ChunkAdditionError struct {
+	Accumulator Response
+	Chunk       *Response
+}
+
+func (e *ChunkAdditionError) Error() string {
+	return fmt.Sprintf("failed to add chunk %v to accumulator %v", e.Chunk, e.Accumulator)
+}

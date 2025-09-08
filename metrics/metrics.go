@@ -31,6 +31,10 @@ func (m *Metrics) Add(other *Metrics) {
 	if other == nil {
 		return
 	}
+	if m.Timestamp.IsZero() {
+		m.Timestamp = other.Timestamp
+	}
+
 	m.TotalTokens += other.TotalTokens
 	m.TotalDuration += other.TotalDuration
 	m.LoadDuration += other.LoadDuration

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider"
-	"github.com/yourlogarithm/l337/retry"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -106,14 +106,14 @@ func WithTool(tool tools.Tool) AgentOption {
 	})
 }
 
-func WithRetry(retryOptions *retry.Options) AgentOption {
-	return AgentOptionFunc(func(a *Agent) error {
-		if retryOptions != nil {
-			a.retry = retryOptions
-		}
-		return nil
-	})
-}
+// func WithRetry(retryOptions *retry.Options) AgentOption {
+// 	return AgentOptionFunc(func(a *Agent) error {
+// 		if retryOptions != nil {
+// 			a.retry = retryOptions
+// 		}
+// 		return nil
+// 	})
+// }
 
 func WithSubordinate(subordinate AgentImpl) AgentOption {
 	return AgentOptionFunc(func(a *Agent) error {
@@ -122,7 +122,7 @@ func WithSubordinate(subordinate AgentImpl) AgentOption {
 	})
 }
 
-func WithChatOptions(chatOptions provider.ChatOptions) AgentOption {
+func WithChatOptions(chatOptions chat.Options) AgentOption {
 	return AgentOptionFunc(func(a *Agent) error {
 		a.chatOptions = chatOptions
 		return nil

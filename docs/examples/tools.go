@@ -7,7 +7,6 @@ import (
 	"github.com/yourlogarithm/l337/agent"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider/openai"
-	"github.com/yourlogarithm/l337/run"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -16,7 +15,7 @@ type AddParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func add(ctx context.Context, response *run.Response, addParams AddParams) (string, error) {
+func add(ctx context.Context, response *chat.RunResponse, addParams AddParams) (string, error) {
 	return fmt.Sprintf("%f", addParams.A+addParams.B), nil
 }
 
@@ -25,7 +24,7 @@ type SubtractParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func subtract(ctx context.Context, response *run.Response, subtractParams SubtractParams) (string, error) {
+func subtract(ctx context.Context, response *chat.RunResponse, subtractParams SubtractParams) (string, error) {
 	return fmt.Sprintf("%f", subtractParams.A-subtractParams.B), nil
 }
 
@@ -34,7 +33,7 @@ type MultiplyParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func multiply(ctx context.Context, response *run.Response, multiplyParams MultiplyParams) (string, error) {
+func multiply(ctx context.Context, response *chat.RunResponse, multiplyParams MultiplyParams) (string, error) {
 	return fmt.Sprintf("%f", multiplyParams.A*multiplyParams.B), nil
 }
 
@@ -43,7 +42,7 @@ type DivideParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func divide(ctx context.Context, response *run.Response, divideParams DivideParams) (string, error) {
+func divide(ctx context.Context, response *chat.RunResponse, divideParams DivideParams) (string, error) {
 	if divideParams.B != 0 {
 		return fmt.Sprintf("%f", divideParams.A/divideParams.B), nil
 	}
@@ -74,7 +73,7 @@ func ToolsExample() {
 
 	response, err := mathAgent.RunWithParams(
 		context.Background(),
-		run.WithMessage(chat.RoleUser, "What is 5 + 3?"),
+		chat.WithMessage(chat.RoleUser, "What is 5 + 3?"),
 	)
 	if err != nil {
 		panic(err)

@@ -2,34 +2,37 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 
+	"github.com/openai/openai-go/option"
 	"github.com/yourlogarithm/l337/agent"
 	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
-	"github.com/yourlogarithm/l337/provider/ollama"
-	"github.com/yourlogarithm/l337/run"
+	"github.com/yourlogarithm/l337/provider/openai"
 )
 
 func main() {
 	client, logger := newLoggingHTTPClient()
 
-	// model := openai.NewModel(
-	// 	"zai-org/GLM-4.5",
-	// 	option.WithBaseURL(os.Getenv("BASE_URL")),
-	// 	option.WithAPIKey(os.Getenv("API_KEY")),
-	// 	option.WithHTTPClient(client),
-	// )
-
-	model, _ := ollama.NewModel(
-		"qwen3:8b",
-		"http://localhost:11434",
-		// os.Getenv("OLLAMA_BASE_URL"),
-		client,
+	model := openai.NewModel(
+		"Qwen/Qwen3-0.6B",
+		option.WithBaseURL(os.Getenv("BASE_URL")),
+		option.WithAPIKey(os.Getenv("API_KEY")),
+		option.WithHTTPClient(client),
 	)
 
-	chatOptions := provider.ChatOptions{
-		ReasoningEffort: provider.NewReasoningEffortBool(true),
+	// model, _ := ollama.NewModel(
+	// 	"qwen3:8b",
+	// 	"http://localhost:11434",
+	// 	// os.Getenv("OLLAMA_BASE_URL"),
+	// 	client,
+	// )
+
+	chatOptions := chat.Options{
+		// ReasoningEffort: chat.NewReasoningEffortBool(true),
+		IncludeStreamMetrics: true,
 	}
 
 	inFavorAgent, err := agent.New(model, agent.WithName("favor_agent"), agent.WithDescription("Agent that provides a detailed analysis in favor of the discussed topic."), agent.WithInstructions("Provide strong arguments and detailed analysis. Use point-by-point structure. Respond with a single side of the argument in markdown format."), agent.WithChatOptions(chatOptions))
@@ -47,16 +50,51 @@ func main() {
 		panic(err)
 	}
 
-	response, err := team.RunWithParams(
+	runResponse := chat.RunResponse{
+		Messages: []chat.Message{
+			{
+				Role:    chat.RoleUser,
+				Content: "Discuss the pros and cons of using AI in education.",
+			},
+		},
+	}
+
+	stream, err := team.RunStreaming(
 		context.Background(),
-		run.WithMessage(chat.RoleUser, "Discuss the pros and cons of using AI in education."),
+		&runResponse,
+		128,
 	)
 	if err != nil {
 		fmt.Printf("Error occurred: %v\n", err)
 	}
 
-	// fmt.Println("Team Response:", response.Content())
-	fmt.Printf("%v\n", response.Metrics)
+	fmt.Println("Consuming stream...")
+	reasoning := false
+	for {
+		chunk, err := stream.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			fmt.Printf("Error occurred: %v\n", err)
+			break
+		}
+		if chunk.Content != "" {
+			if reasoning {
+				reasoning = false
+				fmt.Printf("\n\n--- Content ---\n")
+			}
+			fmt.Printf("%s", chunk.Content)
+		} else if chunk.Reasoning != "" {
+			if !reasoning {
+				fmt.Printf("\n\n--- Reasoning ---\n")
+				reasoning = true
+			}
+			fmt.Printf("%s", chunk.Reasoning)
+		}
+	}
+
+	metrics, _ := json.MarshalIndent(runResponse.Metrics, "", "  ")
+	fmt.Printf("\n%s\n", metrics)
 
 	defer logger.SaveToFile("requests.json")
 }

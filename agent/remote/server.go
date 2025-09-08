@@ -6,14 +6,15 @@ import (
 	"net/http"
 
 	"github.com/yourlogarithm/l337/agent"
+	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/internal/logging"
-	"github.com/yourlogarithm/l337/run"
 )
 
 var serverLogger = logging.SetupLogger("remote.server")
 
 type AgentServer struct {
-	Agent agent.AgentImpl
+	Agent               agent.AgentImpl
+	StreamingBufferSize int
 }
 
 func returnPlaintext(w http.ResponseWriter, req *http.Request, content string) {
@@ -25,7 +26,7 @@ func returnPlaintext(w http.ResponseWriter, req *http.Request, content string) {
 }
 
 func (r *AgentServer) Name(w http.ResponseWriter, req *http.Request) {
-	serverLogger.Debug("Initiated", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Debug("Name", "method", req.Method, "path", req.URL.Path)
 
 	if req.Method != http.MethodGet {
 		serverLogger.Info("Invalid request method", "method", req.Method, "path", req.URL.Path)
@@ -42,11 +43,11 @@ func (r *AgentServer) Name(w http.ResponseWriter, req *http.Request) {
 
 	returnPlaintext(w, req, name)
 
-	serverLogger.Info("Completed", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Info("Name", "method", req.Method, "path", req.URL.Path)
 }
 
 func (r *AgentServer) Description(w http.ResponseWriter, req *http.Request) {
-	serverLogger.Debug("Initiated", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Debug("Description", "method", req.Method, "path", req.URL.Path)
 
 	if req.Method != http.MethodGet {
 		serverLogger.Info("Invalid request method", "method", req.Method, "path", req.URL.Path)
@@ -63,11 +64,11 @@ func (r *AgentServer) Description(w http.ResponseWriter, req *http.Request) {
 
 	returnPlaintext(w, req, description)
 
-	serverLogger.Info("Completed", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Info("Description", "method", req.Method, "path", req.URL.Path)
 }
 
 func (r *AgentServer) Skills(w http.ResponseWriter, req *http.Request) {
-	serverLogger.Debug("Initiated", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Debug("Skills", "method", req.Method, "path", req.URL.Path)
 
 	if req.Method != http.MethodGet {
 		serverLogger.Info("Invalid request method", "method", req.Method, "path", req.URL.Path)
@@ -88,27 +89,36 @@ func (r *AgentServer) Skills(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
 
-	serverLogger.Info("Completed", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Info("Skills", "method", req.Method, "path", req.URL.Path)
 }
 
-func (r *AgentServer) Run(w http.ResponseWriter, req *http.Request) {
-	serverLogger.Debug("Initiated", "method", req.Method, "path", req.URL.Path)
-
+func parseRunRequest(w http.ResponseWriter, req *http.Request) *chat.RunResponse {
 	if req.Method != http.MethodPost {
 		serverLogger.Info("Invalid request method", "method", req.Method, "path", req.URL.Path)
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
+		return nil
 	}
 
-	var runResponse run.Response
+	var runResponse chat.RunResponse
 	if err := json.NewDecoder(req.Body).Decode(&runResponse); err != nil {
 		serverLogger.Info("Failed to parse request body", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to parse request body: %v", err), http.StatusBadRequest)
+		return nil
+	}
+
+	return &runResponse
+}
+
+func (r *AgentServer) Run(w http.ResponseWriter, req *http.Request) {
+	serverLogger.Debug("Run", "method", req.Method, "path", req.URL.Path)
+
+	runResponse := parseRunRequest(w, req)
+	if runResponse == nil {
 		return
 	}
 
 	ctx := req.Context()
-	err := r.Agent.Run(ctx, &runResponse)
+	err := r.Agent.Run(ctx, runResponse)
 	if err != nil {
 		serverLogger.Error("Failed to execute run", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to execute run: %v", err), http.StatusInternalServerError)
@@ -121,7 +131,75 @@ func (r *AgentServer) Run(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
 
-	serverLogger.Info("Completed", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Info("Run", "method", req.Method, "path", req.URL.Path)
+}
+
+func (r *AgentServer) RunStreaming(w http.ResponseWriter, req *http.Request) {
+	serverLogger.Debug("RunStreaming", "method", req.Method, "path", req.URL.Path)
+
+	runResponse := parseRunRequest(w, req)
+	if runResponse == nil {
+		return
+	}
+
+	ctx := req.Context()
+	stream, err := r.Agent.RunStreaming(ctx, runResponse, r.StreamingBufferSize)
+	if err != nil {
+		serverLogger.Error("Failed to execute run streaming", "error", err, "path", req.URL.Path)
+		http.Error(w, fmt.Sprintf("Failed to execute run streaming: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	clientGone := req.Context().Done()
+
+	rc := http.NewResponseController(w)
+
+	sendEvent := func(event string, structuredData any) bool {
+		data, err := json.Marshal(structuredData)
+		if err != nil {
+			serverLogger.Error("Failed to marshal final response", "error", err, "path", req.URL.Path)
+			http.Error(w, fmt.Sprintf("Failed to marshal final response: %v", err), http.StatusInternalServerError)
+			return false
+		}
+		_, err = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
+		if err != nil {
+			serverLogger.Info("Failed to write final response", "error", err, "path", req.URL.Path)
+			return false
+		}
+		err = rc.Flush()
+		if err != nil {
+			serverLogger.Debug("Client disconnected during final flush", "error", err, "path", req.URL.Path)
+			return false
+		}
+		return true
+	}
+
+	ok := true
+streamingLoop:
+	for {
+		select {
+		case <-clientGone:
+			serverLogger.Info("Client disconnected", "path", req.URL.Path)
+			break streamingLoop
+		case responseChunk, ok := <-stream:
+			if !ok {
+				serverLogger.Info("Stream closed by server", "path", req.URL.Path)
+				break streamingLoop
+			}
+			if ok = sendEvent("chunk", responseChunk.ToMarshalable()); !ok {
+				break streamingLoop
+			}
+		}
+	}
+
+	if ok {
+		sendEvent("response", runResponse)
+	}
+
+	serverLogger.Info("RunStreaming", "method", req.Method, "path", req.URL.Path)
 }
 
 func (r *AgentServer) Serve(addr string, handler http.Handler) error {
@@ -129,5 +207,6 @@ func (r *AgentServer) Serve(addr string, handler http.Handler) error {
 	http.HandleFunc("/skills", r.Skills)
 	http.HandleFunc("/description", r.Description)
 	http.HandleFunc("/run", r.Run)
+	http.HandleFunc("/run_streaming", r.RunStreaming)
 	return http.ListenAndServe(addr, handler)
 }

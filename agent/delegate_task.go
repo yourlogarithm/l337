@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
-	"github.com/yourlogarithm/l337/run"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -27,7 +26,7 @@ func addDelegateTaskTool(agent *Agent) error {
 		return fmt.Errorf("agent is nil")
 	}
 
-	delegateTask := func(ctx context.Context, response *run.Response, delegateTaskParams delegateTaskParams) (string, error) {
+	delegateTask := func(ctx context.Context, response *chat.RunResponse, delegateTaskParams delegateTaskParams) (string, error) {
 		logger.Debug(delegate_task_tool_name, "params", delegateTaskParams)
 
 		if len(delegateTaskParams.Names) == 0 {
@@ -61,7 +60,7 @@ func addDelegateTaskTool(agent *Agent) error {
 				wg.Add(1)
 				go func(sub AgentImpl, name string) {
 					defer wg.Done()
-					subordinateRunResponse := &run.Response{
+					subordinateRunResponse := &chat.RunResponse{
 						SessionID: response.SessionID,
 						Messages:  []chat.Message{msg},
 						Metrics:   make(map[uuid.UUID][]metrics.Metrics),

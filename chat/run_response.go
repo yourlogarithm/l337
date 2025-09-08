@@ -1,19 +1,18 @@
-package run
+package chat
 
 import (
 	"github.com/google/uuid"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
 )
 
-type Response struct {
+type RunResponse struct {
 	SessionID uuid.UUID                       `json:"session_id"`
-	Messages  []chat.Message                  `json:"messages"`
+	Messages  []Message                       `json:"messages"`
 	Metrics   map[uuid.UUID][]metrics.Metrics `json:"metrics"`
 }
 
-// Content of the last message in the response.
-func (r *Response) Content() string {
+// Returns the content of the last message in the response.
+func (r *RunResponse) Content() string {
 	if len(r.Messages) == 0 {
 		return ""
 	}

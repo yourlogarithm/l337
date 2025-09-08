@@ -1,4 +1,4 @@
-package provider
+package chat
 
 import (
 	"time"
@@ -6,7 +6,7 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-type ChatOptions struct {
+type Options struct {
 	// OpenAI: Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	FrequencyPenalty *float64
 	// OpenAI: Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the `content` of `message`.
@@ -60,6 +60,10 @@ type ChatOptions struct {
 	//     - `text/plain` (default)
 	//     - `application/json`
 	ResponseMIMEType string
+	// OpenAI: Include usage statistics in streaming mode.
+	IncludeStreamMetrics bool
+	// l337: Controls channel buffering for streaming responses. Defaults to `0` (unbuffered).
+	StreamingBufferSize int
 }
 
 // Only one can be set
