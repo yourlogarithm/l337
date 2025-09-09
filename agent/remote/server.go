@@ -160,18 +160,18 @@ func (r *AgentServer) RunStreaming(w http.ResponseWriter, req *http.Request) {
 	sendEvent := func(event string, structuredData any) bool {
 		data, err := json.Marshal(structuredData)
 		if err != nil {
-			serverLogger.Error("Failed to marshal final response", "error", err, "path", req.URL.Path)
-			http.Error(w, fmt.Sprintf("Failed to marshal final response: %v", err), http.StatusInternalServerError)
+			serverLogger.Error("Failed to marshal data", "error", err, "path", req.URL.Path)
+			http.Error(w, fmt.Sprintf("Failed to marshal data: %v", err), http.StatusInternalServerError)
 			return false
 		}
 		_, err = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
 		if err != nil {
-			serverLogger.Info("Failed to write final response", "error", err, "path", req.URL.Path)
+			serverLogger.Info("Failed to write data", "error", err, "path", req.URL.Path)
 			return false
 		}
 		err = rc.Flush()
 		if err != nil {
-			serverLogger.Debug("Client disconnected during final flush", "error", err, "path", req.URL.Path)
+			serverLogger.Debug("Client disconnected during flush", "error", err, "path", req.URL.Path)
 			return false
 		}
 		return true
@@ -182,11 +182,11 @@ streamingLoop:
 	for {
 		select {
 		case <-clientGone:
-			serverLogger.Info("Client disconnected", "path", req.URL.Path)
+			serverLogger.Debug("Client disconnected", "path", req.URL.Path)
 			break streamingLoop
 		case responseChunk, ok := <-stream:
 			if !ok {
-				serverLogger.Info("Stream closed by server", "path", req.URL.Path)
+				serverLogger.Debug("Stream closed by server", "path", req.URL.Path)
 				break streamingLoop
 			}
 			if ok = sendEvent("chunk", responseChunk.ToMarshalable()); !ok {
