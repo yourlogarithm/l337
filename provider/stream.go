@@ -53,3 +53,9 @@ func (rs ResponseChannel) SendErr(err error) {
 func (rs ResponseChannel) Close() {
 	close(rs)
 }
+
+func (rs ResponseChannel) WaitUntilFinished() {
+	for range rs {
+		// just consume
+	}
+}
