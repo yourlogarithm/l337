@@ -1,7 +1,10 @@
 package agent
 
 import (
+	"context"
+
 	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider"
 	"github.com/yourlogarithm/l337/tools"
@@ -103,6 +106,13 @@ func WithExpectedOutput(expectedOutput string) AgentOption {
 func WithTool(tool tools.Tool) AgentOption {
 	return AgentOptionFunc(func(a *Agent) error {
 		a.tools.AddTool(tool)
+		return nil
+	})
+}
+
+func WithMCP(ctx context.Context, session *mcp.ClientSession) AgentOption {
+	return AgentOptionFunc(func(a *Agent) error {
+		a.tools.RegisterMCP(ctx, session)
 		return nil
 	})
 }

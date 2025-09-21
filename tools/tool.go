@@ -19,7 +19,7 @@ type Tool struct {
 	SkillCard
 }
 
-type ToolCallable func(context.Context, *chat.RunResponse, string) (string, error)
+type ToolCallable func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error)
 
 type ToolCallableTyped[T any] func(context.Context, *chat.RunResponse, T) (string, error)
 
