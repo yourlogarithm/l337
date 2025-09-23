@@ -51,10 +51,10 @@ func (a *Agent) Description() (string, error) {
 	return a.description, nil
 }
 
-func (a *Agent) Skills() ([]tools.SkillCard, error) {
-	var skills = make([]tools.SkillCard, 0, len(a.tools))
+func (a *Agent) Tools() ([]tools.Tool, error) {
+	var tools = make([]tools.Tool, 0, len(a.tools))
 	for _, tool := range a.tools {
-		skills = append(skills, tool.SkillCard)
+		tools = append(tools, tool)
 	}
-	return skills, nil
+	return tools, nil
 }

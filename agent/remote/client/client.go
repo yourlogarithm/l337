@@ -74,7 +74,7 @@ func (c *RemoteAgent) Description() (string, error) {
 	return description, nil
 }
 
-func (c *RemoteAgent) Skills() (skills []tools.SkillCard, err error) {
+func (c *RemoteAgent) Tools() (tools []tools.Tool, err error) {
 	resp, err := c.HttpClient.Get(c.BaseURL + "/skills")
 	if err != nil {
 		return nil, err
@@ -85,8 +85,8 @@ func (c *RemoteAgent) Skills() (skills []tools.SkillCard, err error) {
 		return nil, err
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&skills); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&tools); err != nil {
 		return nil, err
 	}
-	return skills, nil
+	return tools, nil
 }

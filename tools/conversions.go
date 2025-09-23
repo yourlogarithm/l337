@@ -14,13 +14,12 @@ import (
 )
 
 func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) Tool {
-	card := SkillCard{
-		Name:        mcpTool.Name,
-		Description: mcpTool.Description,
-	}
 	schema := googleSchemaToInvopopSchema(mcpTool.InputSchema)
 	return Tool{
-		Callable: func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error) {
+		Name:        mcpTool.Name,
+		Description: mcpTool.Description,
+		Parameters:  schema,
+		callable: func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error) {
 			args := map[string]any{}
 			if err := json.Unmarshal([]byte(rawArguments), &args); err != nil {
 				return "", fmt.Errorf("invalid tool arguments: %w", err)
@@ -48,8 +47,6 @@ func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) Tool {
 			}
 			return sb.String(), nil
 		},
-		Schema:    schema,
-		SkillCard: card,
 	}
 }
 

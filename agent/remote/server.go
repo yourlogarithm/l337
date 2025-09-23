@@ -76,7 +76,7 @@ func (r *AgentServer) Skills(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	skills, err := r.Agent.Skills()
+	tools, err := r.Agent.Tools()
 	if err != nil {
 		serverLogger.Error("Failed to get agent skills", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to get agent skills: %v", err), http.StatusInternalServerError)
@@ -84,7 +84,7 @@ func (r *AgentServer) Skills(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(skills); err != nil {
+	if err := json.NewEncoder(w).Encode(tools); err != nil {
 		serverLogger.Error("Failed to encode response", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}

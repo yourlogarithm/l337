@@ -11,7 +11,7 @@ import (
 type AgentImpl interface {
 	Name() (string, error)
 	Description() (string, error)
-	Skills() ([]tools.SkillCard, error)
+	Tools() ([]tools.Tool, error)
 	Run(context.Context, *chat.RunResponse) error
 	RunStreaming(context.Context, *chat.RunResponse, int) (provider.ResponseChannel, error)
 }

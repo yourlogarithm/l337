@@ -16,13 +16,13 @@ func convertTool(t *tools.Tool) api.Tool {
 		Properties map[string]api.ToolProperty `json:"properties"`
 	}
 
-	if t.Schema != nil {
-		parameters.Type = t.Schema.Type
-		parameters.Defs = t.Schema.Definitions
-		parameters.Items = t.Schema.Items
-		parameters.Required = t.Schema.Required
-		parameters.Properties = make(map[string]api.ToolProperty, t.Schema.Properties.Len())
-		marshaled, _ := json.Marshal(t.Schema.Properties)
+	if t.Parameters != nil {
+		parameters.Type = t.Parameters.Type
+		parameters.Defs = t.Parameters.Definitions
+		parameters.Items = t.Parameters.Items
+		parameters.Required = t.Parameters.Required
+		parameters.Properties = make(map[string]api.ToolProperty, t.Parameters.Properties.Len())
+		marshaled, _ := json.Marshal(t.Parameters.Properties)
 		json.Unmarshal(marshaled, &parameters.Properties)
 	}
 

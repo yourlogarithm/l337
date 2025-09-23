@@ -120,7 +120,7 @@ func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunRespons
 
 				tool, exists := a.tools.Get(toolCall.Name)
 				if exists {
-					result, err := tool.Callable(ctx, runResponse, toolCall.Arguments)
+					result, err := tool.Call(ctx, runResponse, toolCall.Arguments)
 					if err != nil {
 						content = "error: " + err.Error()
 						isErr = true

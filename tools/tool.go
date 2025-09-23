@@ -11,12 +11,16 @@ import (
 )
 
 type Tool struct {
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Parameters  *jsonschema.Schema `json:"parameters,omitempty"`
+
 	// Argument agnostic function wrapper over the user's implementaion.
-	Callable ToolCallable
-	// Parameters Schema
-	Schema *jsonschema.Schema
-	// SkillCard card
-	SkillCard
+	callable ToolCallable `json:"-"`
+}
+
+func (t Tool) Call(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error) {
+	return t.callable(ctx, runResponse, rawArguments)
 }
 
 type ToolCallable func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error)
@@ -34,25 +38,18 @@ func wrapCallable[T any](fn ToolCallableTyped[T]) ToolCallable {
 }
 
 // Declare tool that does not require any arguments
-func NewTool(name, description string, callable func(ctx context.Context) (string, error), options ...SkillCardOption) Tool {
-	skill := SkillCard{
+func NewTool(name, description string, callable func(ctx context.Context) (string, error)) Tool {
+	return Tool{
 		Name:        name,
 		Description: description,
-	}
-	for _, opt := range options {
-		opt.Apply(&skill)
-	}
-
-	return Tool{
-		Callable: func(ctx context.Context, response *chat.RunResponse, rawArguments string) (string, error) {
+		callable: func(ctx context.Context, response *chat.RunResponse, rawArguments string) (string, error) {
 			return callable(ctx)
 		},
-		SkillCard: skill,
 	}
 }
 
 // Declare a tool with required arguments
-func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T], options ...SkillCardOption) (Tool, error) {
+func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T]) (Tool, error) {
 	schema := jsonschema.Reflect(new(T))
 	targetRef := strings.TrimPrefix(schema.Ref, "#/$defs/")
 	if targetRef != "" {
@@ -67,17 +64,10 @@ func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped
 		delete(schema.Definitions, targetRef)
 	}
 
-	skill := SkillCard{
+	return Tool{
 		Name:        name,
 		Description: description,
-	}
-	for _, opt := range options {
-		opt.Apply(&skill)
-	}
-
-	return Tool{
-		Callable:  wrapCallable(callable),
-		SkillCard: skill,
-		Schema:    schema,
+		Parameters:  schema,
+		callable:    wrapCallable(callable),
 	}, nil
 }

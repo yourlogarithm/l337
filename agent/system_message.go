@@ -56,17 +56,17 @@ func (a *Agent) ComputeSystemMessage() (string, error) {
 				subordinatesSb.WriteByte('\n')
 			}
 
-			skills, err := subordinate.Skills()
+			tools, err := subordinate.Tools()
 			if err != nil {
 				return "", err
 			}
-			if len(skills) > 0 {
+			if len(tools) > 0 {
 				subordinatesSb.WriteString("   - Member tools:\n")
-				for _, skill := range skills {
+				for _, tool := range tools {
 					subordinatesSb.WriteString("    - ")
-					subordinatesSb.WriteString(skill.Name)
+					subordinatesSb.WriteString(tool.Name)
 					subordinatesSb.WriteByte(':')
-					subordinatesSb.WriteString(skill.Description)
+					subordinatesSb.WriteString(tool.Description)
 					subordinatesSb.WriteByte('\n')
 				}
 			}
