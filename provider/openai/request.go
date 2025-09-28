@@ -12,18 +12,21 @@ import (
 
 func buildChatRequest(model string, request *provider.Request, options *chat.Options) (openai.ChatCompletionNewParams, error) {
 	params := openai.ChatCompletionNewParams{
-		Messages:            make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
-		Model:               model,
-		Tools:               make([]openai.ChatCompletionToolParam, 0, len(request.Tools)),
-		Logprobs:            param.NewOpt(options.Logprobs),
-		MaxCompletionTokens: param.NewOpt(int64(options.MaxCompletionTokens)),
-		PresencePenalty:     param.NewOpt(options.PresencePenalty),
-		PromptCacheKey:      param.NewOpt(options.PromptCacheKey),
-		SafetyIdentifier:    param.NewOpt(options.SafetyIdentifier),
-		User:                param.NewOpt(options.User),
-		LogitBias:           options.LogitBias,
-		ServiceTier:         openai.ChatCompletionNewParamsServiceTier(options.ServiceTier),
-		Stop:                openai.ChatCompletionNewParamsStopUnion{OfStringArray: options.Stop},
+		Messages:         make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
+		Model:            model,
+		Tools:            make([]openai.ChatCompletionToolParam, 0, len(request.Tools)),
+		Logprobs:         param.NewOpt(options.Logprobs),
+		PresencePenalty:  param.NewOpt(options.PresencePenalty),
+		PromptCacheKey:   param.NewOpt(options.PromptCacheKey),
+		SafetyIdentifier: param.NewOpt(options.SafetyIdentifier),
+		User:             param.NewOpt(options.User),
+		LogitBias:        options.LogitBias,
+		ServiceTier:      openai.ChatCompletionNewParamsServiceTier(options.ServiceTier),
+		Stop:             openai.ChatCompletionNewParamsStopUnion{OfStringArray: options.Stop},
+	}
+
+	if options.MaxCompletionTokens > 0 {
+		params.MaxCompletionTokens = param.NewOpt(int64(options.MaxCompletionTokens))
 	}
 
 	if options.ReasoningEffort != nil {
@@ -39,9 +42,7 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 	if options.FrequencyPenalty != nil {
 		params.FrequencyPenalty = param.NewOpt(*options.FrequencyPenalty)
 	}
-	// if options.N != nil {
-	// 	params.N = param.NewOpt(int64(*options.N))
-	// }
+
 	if options.Seed != nil {
 		params.Seed = param.NewOpt(int64(*options.Seed))
 	}
@@ -66,23 +67,55 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 
 	for _, msg := range request.Messages {
 		var openaiMsg openai.ChatCompletionMessageParamUnion
+		var nameParam *param.Opt[string]
 		switch msg.Role {
 		case chat.RoleDeveloper:
-			openaiMsg = openai.DeveloperMessage(msg.Content)
-			openaiMsg.OfDeveloper.Name = openai.String(msg.Name)
+			developerMsg := openai.ChatCompletionDeveloperMessageParam{}
+			if msg.Content != "" {
+				developerMsg.Content.OfString = param.NewOpt(msg.Content)
+			}
+			openaiMsg = openai.ChatCompletionMessageParamUnion{OfDeveloper: &developerMsg}
+			nameParam = &openaiMsg.OfDeveloper.Name
 		case chat.RoleSystem:
-			openaiMsg = openai.SystemMessage(msg.Content)
-			openaiMsg.OfSystem.Name = openai.String(msg.Name)
+			systemMsg := openai.ChatCompletionSystemMessageParam{}
+			if msg.Content != "" {
+				systemMsg.Content.OfString = param.NewOpt(msg.Content)
+			}
+			openaiMsg = openai.ChatCompletionMessageParamUnion{OfSystem: &systemMsg}
+			nameParam = &openaiMsg.OfSystem.Name
 		case chat.RoleUser:
-			openaiMsg = openai.UserMessage(msg.Content)
-			openaiMsg.OfUser.Name = openai.String(msg.Name)
+			userMsg := openai.ChatCompletionUserMessageParam{}
+			if msg.Content != "" {
+				userMsg.Content.OfString = param.NewOpt(msg.Content)
+			}
+			openaiMsg = openai.ChatCompletionMessageParamUnion{OfUser: &userMsg}
+			nameParam = &openaiMsg.OfUser.Name
 		case chat.RoleAssistant:
-			openaiMsg = openai.AssistantMessage(msg.Content)
-			openaiMsg.OfAssistant.Name = openai.String(msg.Name)
+			assistantMsg := openai.ChatCompletionAssistantMessageParam{}
+			if msg.Content != "" {
+				assistantMsg.Content.OfString = param.NewOpt(msg.Content)
+			}
+			if len(msg.ToolCalls) > 0 {
+				assistantMsg.ToolCalls = make([]openai.ChatCompletionMessageToolCallParam, len(msg.ToolCalls))
+				for i := range msg.ToolCalls {
+					assistantMsg.ToolCalls[i] = convertToolCall(&msg.ToolCalls[i])
+				}
+			}
+			openaiMsg = openai.ChatCompletionMessageParamUnion{OfAssistant: &assistantMsg}
+			nameParam = &openaiMsg.OfAssistant.Name
 		case chat.RoleTool:
-			openaiMsg = openai.ToolMessage(msg.Content, msg.Name)
+			toolMsg := openai.ChatCompletionToolMessageParam{
+				ToolCallID: msg.Name,
+			}
+			if msg.Content != "" {
+				toolMsg.Content.OfString = param.NewOpt(msg.Content)
+			}
+			openaiMsg = openai.ChatCompletionMessageParamUnion{OfTool: &toolMsg}
 		default:
 			return params, provider.ErrUnknownRole{Role: msg.Role.String()}
+		}
+		if msg.Name != "" && nameParam != nil {
+			*nameParam = param.NewOpt(msg.Name)
 		}
 		params.Messages = append(params.Messages, openaiMsg)
 	}

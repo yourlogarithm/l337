@@ -3,44 +3,49 @@ package provider
 import "github.com/yourlogarithm/l337/chat"
 
 type ContentAccumulator struct {
-	Response
+	Response        Response
+	toolCallsLookup map[string]*chat.ToolCall
 }
 
 func (acc *ContentAccumulator) AddChunk(chunk *Response) error {
-	if acc.ID == "" {
-		acc.ID = chunk.ID
-	} else if acc.ID != chunk.ID && chunk.ID != "" {
+	if acc.Response.ID == "" {
+		acc.Response.ID = chunk.ID
+	} else if acc.Response.ID != chunk.ID && chunk.ID != "" {
 		return ErrChunkAddition{Accumulator: acc.Response, Chunk: chunk}
 	}
 
-	acc.Created = chunk.Created
-	acc.Content += chunk.Content
-	acc.Refusal += chunk.Refusal
-	acc.Reasoning += chunk.Reasoning
-	acc.FinishReason += chunk.FinishReason
-	acc.Metrics.Add(&chunk.Metrics)
+	acc.Response.Created = chunk.Created
+	acc.Response.Content += chunk.Content
+	acc.Response.Refusal += chunk.Refusal
+	acc.Response.Reasoning += chunk.Reasoning
+	acc.Response.FinishReason += chunk.FinishReason
+	acc.Response.Metrics.Add(&chunk.Metrics)
 
-	if len(acc.ToolCalls) < len(chunk.ToolCalls) {
-		acc.ToolCalls = make([]chat.ToolCall, len(chunk.ToolCalls))
-	}
-
-	for i := range chunk.ToolCalls {
-		call := &chunk.ToolCalls[i]
-		accCall := &acc.ToolCalls[i]
-		if accCall.ID == "" {
-			*accCall = *call
-		} else if accCall.ID != call.ID && call.ID != "" {
-			return &ErrChunkAddition{Accumulator: acc.Response, Chunk: chunk}
+	for _, call := range chunk.ToolCalls {
+		if accToolCall, exists := acc.toolCallsLookup[call.ID]; exists {
+			accToolCall.Arguments += call.Arguments
+		} else if call.ID == "" {
+			if len(acc.Response.ToolCalls) == 0 {
+				return ErrChunkAddition{Accumulator: acc.Response, Chunk: chunk}
+			}
+			lastCall := &acc.Response.ToolCalls[len(acc.Response.ToolCalls)-1]
+			lastCall.Arguments += call.Arguments
+		} else {
+			idx := len(acc.Response.ToolCalls)
+			acc.Response.ToolCalls = append(acc.Response.ToolCalls, call)
+			acc.toolCallsLookup[call.ID] = &acc.Response.ToolCalls[idx]
 		}
-		if call.Name != "" {
-			accCall.Name = call.Name
-		}
-		accCall.Arguments += call.Arguments
 	}
 
 	return nil
 }
 
-func (acc *ContentAccumulator) HasFinished() bool {
+func NewContentAccumulator() ContentAccumulator {
+	return ContentAccumulator{
+		toolCallsLookup: make(map[string]*chat.ToolCall),
+	}
+}
+
+func (acc ContentAccumulator) HasFinished() bool {
 	return acc.Response.FinishReason != ""
 }

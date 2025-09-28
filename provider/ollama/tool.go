@@ -2,8 +2,10 @@ package ollama
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/ollama/ollama/api"
+	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -34,4 +36,16 @@ func convertTool(t *tools.Tool) api.Tool {
 			Parameters:  parameters,
 		},
 	}
+}
+
+func convertToolCall(toolCall *api.ToolCall) (chat.ToolCall, error) {
+	rawArguments, err := json.Marshal(toolCall.Function.Arguments)
+	if err != nil {
+		return chat.ToolCall{}, err
+	}
+	return chat.ToolCall{
+		ID:        strconv.Itoa(toolCall.Function.Index),
+		Arguments: string(rawArguments),
+		Name:      toolCall.Function.Name,
+	}, nil
 }

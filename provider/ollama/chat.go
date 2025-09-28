@@ -2,8 +2,6 @@ package ollama
 
 import (
 	"context"
-	"encoding/json"
-	"strconv"
 
 	"github.com/ollama/ollama/api"
 	"github.com/yourlogarithm/l337/chat"
@@ -26,16 +24,11 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *provider.Request, op
 		response.Metrics = convertMetrics(&ollamaResp.Metrics)
 
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
-			rawArguments, err := json.Marshal(toolCall.Function.Arguments)
+			convertedToolCall, err := convertToolCall(&toolCall)
 			if err != nil {
 				return err
 			}
-			toolCall := chat.ToolCall{
-				ID:        strconv.Itoa(toolCall.Function.Index),
-				Arguments: string(rawArguments),
-				Name:      toolCall.Function.Name,
-			}
-			response.ToolCalls = append(response.ToolCalls, toolCall)
+			response.ToolCalls = append(response.ToolCalls, convertedToolCall)
 		}
 
 		return nil

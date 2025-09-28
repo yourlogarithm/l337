@@ -13,12 +13,6 @@ func BuildRunResponse(params ...chat.Parameter) (*chat.RunResponse, error) {
 			return nil, err
 		}
 	}
-	if len(runParams.Messages) == 0 {
-		return nil, ErrBuilderParams{
-			Param: "Messages",
-			Msg:   "at least one message is required",
-		}
-	}
 
 	runResponse := chat.RunResponse{
 		SessionID: runParams.SessionID,

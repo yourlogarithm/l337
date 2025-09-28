@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"io"
-	"slices"
 
 	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/provider"
@@ -20,36 +19,25 @@ func (a *Agent) RunStreamingWithParams(ctx context.Context, bufferSize int, para
 }
 
 func (a *Agent) RunStreaming(ctx context.Context, runResponse *chat.RunResponse, bufferSize int) (provider.ResponseChannel, error) {
-	if len(runResponse.Messages) == 0 || runResponse.Messages[0].Role != chat.RoleSystem {
-		content, err := a.ComputeSystemMessage()
-		if err != nil {
-			return nil, err
-		}
-		systemMsg := chat.Message{
-			Role:    chat.RoleSystem,
-			Content: content,
-		}
-		runResponse.Messages = slices.Insert(runResponse.Messages, 0, systemMsg)
+	tools, err := a.preRun(runResponse)
+	if err != nil {
+		return nil, err
 	}
 
 	channel := provider.NewResponseChannel(bufferSize)
 
-	go a.scheduleChunkProcessing(ctx, runResponse, channel)
+	go a.scheduleChunkProcessing(ctx, tools, runResponse, channel)
 
 	return channel, nil
 }
 
 func (a *Agent) scheduleChunkProcessing(
 	ctx context.Context,
+	tools []tools.Tool,
 	runResponse *chat.RunResponse,
 	responseChannel provider.ResponseChannel,
 ) {
 	defer responseChannel.Close()
-
-	tools := make([]tools.Tool, 0, len(a.tools))
-	for _, tool := range a.tools {
-		tools = append(tools, tool)
-	}
 
 	for {
 		req := provider.Request{
@@ -63,7 +51,7 @@ func (a *Agent) scheduleChunkProcessing(
 			return
 		}
 
-		acc := provider.ContentAccumulator{}
+		acc := provider.NewContentAccumulator()
 		for {
 			chunk, err := stream.Next()
 			if err == io.EOF {

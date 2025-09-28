@@ -23,21 +23,9 @@ func (a *Agent) RunWithParams(ctx context.Context, params ...chat.Parameter) (*c
 }
 
 func (a *Agent) Run(ctx context.Context, runResponse *chat.RunResponse) error {
-	if len(runResponse.Messages) == 0 || runResponse.Messages[0].Role != chat.RoleSystem {
-		content, err := a.ComputeSystemMessage()
-		if err != nil {
-			return err
-		}
-		systemMsg := chat.Message{
-			Role:    chat.RoleSystem,
-			Content: content,
-		}
-		runResponse.Messages = slices.Insert(runResponse.Messages, 0, systemMsg)
-	}
-
-	tools := make([]tools.Tool, 0, len(a.tools))
-	for _, tool := range a.tools {
-		tools = append(tools, tool)
+	tools, err := a.preRun(runResponse)
+	if err != nil {
+		return err
 	}
 
 	for {
@@ -62,18 +50,59 @@ func (a *Agent) Run(ctx context.Context, runResponse *chat.RunResponse) error {
 	return nil
 }
 
+// preRun performs common pre-run checks and setups.
+func (a *Agent) preRun(runResponse *chat.RunResponse) ([]tools.Tool, error) {
+	if a.model == nil {
+		return nil, ErrBuilderParams{
+			Param: "model",
+			Msg:   "nil",
+		}
+	}
+
+	if len(runResponse.Messages) == 0 {
+		return nil, ErrBuilderParams{
+			Param: "messages",
+			Msg:   "at least one message is required",
+		}
+	}
+
+	if err := a.addSystemMessageIfMissing(runResponse); err != nil {
+		return nil, err
+	}
+
+	return a.Tools()
+}
+
+func (a *Agent) addSystemMessageIfMissing(runResponse *chat.RunResponse) error {
+	if len(runResponse.Messages) == 0 || runResponse.Messages[0].Role != chat.RoleSystem {
+		logger.Debug("adding system message to run response")
+		content, err := a.ComputeSystemMessage()
+		if err != nil {
+			return err
+		}
+		if content != "" {
+			systemMsg := chat.Message{
+				Role:    chat.RoleSystem,
+				Content: content,
+			}
+			runResponse.Messages = slices.Insert(runResponse.Messages, 0, systemMsg)
+		}
+	}
+	return nil
+}
+
 func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunResponse, chatResponse *provider.Response) (bool, error) {
 	logger.Debug("agent.run.response", "agent", a.name, "response", chatResponse)
 
 	if chatResponse == nil {
 		return false, ErrModelResponse{
-			Msg: "model response is nil",
+			Msg: "nil",
 		}
 	}
 
 	if chatResponse.FinishReason == "" {
 		return false, ErrModelResponse{
-			Msg: "response has no finish reason",
+			Msg: "no finish reason",
 		}
 	}
 
@@ -151,7 +180,7 @@ func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunRespons
 			runResponse.Messages = append(runResponse.Messages, chat.Message{
 				Role:    chat.RoleTool,
 				Content: result.Content,
-				Name:    result.ToolCall.Name,
+				Name:    result.ToolCall.ID,
 				IsErr:   result.IsErr,
 			})
 		}

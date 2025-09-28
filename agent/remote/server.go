@@ -67,8 +67,8 @@ func (r *AgentServer) Description(w http.ResponseWriter, req *http.Request) {
 	serverLogger.Info("Description", "method", req.Method, "path", req.URL.Path)
 }
 
-func (r *AgentServer) Skills(w http.ResponseWriter, req *http.Request) {
-	serverLogger.Debug("Skills", "method", req.Method, "path", req.URL.Path)
+func (r *AgentServer) Tools(w http.ResponseWriter, req *http.Request) {
+	serverLogger.Debug("Tools", "method", req.Method, "path", req.URL.Path)
 
 	if req.Method != http.MethodGet {
 		serverLogger.Info("Invalid request method", "method", req.Method, "path", req.URL.Path)
@@ -78,8 +78,8 @@ func (r *AgentServer) Skills(w http.ResponseWriter, req *http.Request) {
 
 	tools, err := r.Agent.Tools()
 	if err != nil {
-		serverLogger.Error("Failed to get agent skills", "error", err, "path", req.URL.Path)
-		http.Error(w, fmt.Sprintf("Failed to get agent skills: %v", err), http.StatusInternalServerError)
+		serverLogger.Error("Failed to get agent tools", "error", err, "path", req.URL.Path)
+		http.Error(w, fmt.Sprintf("Failed to get agent tools: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (r *AgentServer) Skills(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
 
-	serverLogger.Info("Skills", "method", req.Method, "path", req.URL.Path)
+	serverLogger.Info("Tools", "method", req.Method, "path", req.URL.Path)
 }
 
 func parseRunRequest(w http.ResponseWriter, req *http.Request) *chat.RunResponse {
@@ -204,7 +204,7 @@ streamingLoop:
 
 func (r *AgentServer) Serve(addr string, handler http.Handler) error {
 	http.HandleFunc("/name", r.Name)
-	http.HandleFunc("/skills", r.Skills)
+	http.HandleFunc("/tools", r.Tools)
 	http.HandleFunc("/description", r.Description)
 	http.HandleFunc("/run", r.Run)
 	http.HandleFunc("/run_streaming", r.RunStreaming)

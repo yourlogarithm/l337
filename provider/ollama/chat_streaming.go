@@ -2,8 +2,6 @@ package ollama
 
 import (
 	"context"
-	"encoding/json"
-	"strconv"
 
 	"github.com/ollama/ollama/api"
 	"github.com/yourlogarithm/l337/chat"
@@ -15,7 +13,7 @@ func (o *ollamaProvider) ChatStreaming(
 	request *provider.Request,
 	options *chat.Options,
 ) (provider.ResponseChannel, error) {
-	req, err := buildChatRequest(o, request, options, false)
+	req, err := buildChatRequest(o, request, options, true)
 	if err != nil {
 		return nil, err
 	}
@@ -38,16 +36,11 @@ func (o *ollamaProvider) ChatStreaming(
 			}
 
 			for _, toolCall := range ollamaResp.Message.ToolCalls {
-				rawArguments, err := json.Marshal(toolCall.Function.Arguments)
+				convertedToolCall, err := convertToolCall(&toolCall)
 				if err != nil {
 					return err
 				}
-				toolCall := chat.ToolCall{
-					ID:        strconv.Itoa(toolCall.Function.Index),
-					Arguments: string(rawArguments),
-					Name:      toolCall.Function.Name,
-				}
-				response.ToolCalls = append(response.ToolCalls, toolCall)
+				response.ToolCalls = append(response.ToolCalls, convertedToolCall)
 			}
 
 			channel.Send(&response)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/invopop/jsonschema"
@@ -38,7 +39,7 @@ func wrapCallable[T any](fn ToolCallableTyped[T]) ToolCallable {
 }
 
 // Declare tool that does not require any arguments
-func NewTool(name, description string, callable func(ctx context.Context) (string, error)) Tool {
+func New(name, description string, callable func(ctx context.Context) (string, error)) Tool {
 	return Tool{
 		Name:        name,
 		Description: description,
@@ -49,8 +50,14 @@ func NewTool(name, description string, callable func(ctx context.Context) (strin
 }
 
 // Declare a tool with required arguments
-func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped[T]) (Tool, error) {
-	schema := jsonschema.Reflect(new(T))
+// Arguments `T` must be a struct type, otherwise an error is returned.
+func NewWithArgs[T any](name, description string, callable ToolCallableTyped[T]) (Tool, error) {
+	var t T
+	if reflect.TypeOf(t).Kind() != reflect.Struct {
+		return Tool{}, ErrToolCreation{Message: "`callable ToolCallableTyped[T]` expects T to be a struct type"}
+	}
+
+	schema := jsonschema.Reflect(t)
 	targetRef := strings.TrimPrefix(schema.Ref, "#/$defs/")
 	if targetRef != "" {
 		v, ok := schema.Definitions[targetRef]
@@ -63,6 +70,8 @@ func NewToolWithArgs[T any](name, description string, callable ToolCallableTyped
 		schema.Type = v.Type
 		delete(schema.Definitions, targetRef)
 	}
+	schema.Ref = ""
+	schema.Version = ""
 
 	return Tool{
 		Name:        name,

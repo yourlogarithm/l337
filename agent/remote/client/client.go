@@ -75,7 +75,7 @@ func (c *RemoteAgent) Description() (string, error) {
 }
 
 func (c *RemoteAgent) Tools() (tools []tools.Tool, err error) {
-	resp, err := c.HttpClient.Get(c.BaseURL + "/skills")
+	resp, err := c.HttpClient.Get(c.BaseURL + "/tools")
 	if err != nil {
 		return nil, err
 	}

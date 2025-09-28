@@ -12,6 +12,9 @@ import (
 	"github.com/yourlogarithm/l337/tools"
 )
 
+const DELEGATE_TASK_TOOL_NAME = "delegate_task"
+const DELEGATE_TASK_TOOL_DESC = "Delegates the task to one or more subordinates"
+
 type delegateTaskParams struct {
 	// Names of the subordinates to delegate the task to
 	Names []string `json:"names" jsonschema:"required,description=Names of the subordinates to delegate the task to"`
@@ -20,8 +23,6 @@ type delegateTaskParams struct {
 }
 
 func addDelegateTaskTool(agent *Agent) error {
-	const delegate_task_tool_name = "delegate_task"
-
 	if agent == nil {
 		return ErrBuilderParams{
 			Param: "agent",
@@ -30,7 +31,7 @@ func addDelegateTaskTool(agent *Agent) error {
 	}
 
 	delegateTask := func(ctx context.Context, response *chat.RunResponse, delegateTaskParams delegateTaskParams) (string, error) {
-		logger.Debug(delegate_task_tool_name, "params", delegateTaskParams)
+		logger.Debug(DELEGATE_TASK_TOOL_NAME, "params", delegateTaskParams)
 
 		if len(delegateTaskParams.Names) == 0 {
 			return "", fmt.Errorf("no subordinates specified")
@@ -90,7 +91,7 @@ func addDelegateTaskTool(agent *Agent) error {
 		return sb.String(), nil
 	}
 
-	tool, err := tools.NewToolWithArgs(delegate_task_tool_name, "Delegates the task to one or more subordinates", delegateTask)
+	tool, err := tools.NewWithArgs(DELEGATE_TASK_TOOL_NAME, DELEGATE_TASK_TOOL_DESC, delegateTask)
 	if err != nil {
 		panic(err)
 	}

@@ -1,0 +1,21 @@
+Your name is Alpha.
+Alpha description
+
+<instructions>
+  Alpha instructions
+</instructions>
+
+<expected_output>
+  Alpha expected output
+</expected_output>
+
+<subordinates>
+  - Name: Bravo
+    Description: Bravo description
+  - Name: Charlie
+    Description: Charlie description
+</subordinates>
+
+<task_delegation>
+  Depending on the nature of the user request, you can choose to delegate tasks to one or more of your subordinates and then synthesize their responses, or respond directly to the user.
+</task_delegation>

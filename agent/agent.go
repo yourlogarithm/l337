@@ -17,17 +17,12 @@ type Agent struct {
 	// Appended to the system message
 	// If not set, an error will be returned as soon as `Initialize` is called
 	name string
-	// Provided to the parent member (if any) to help understand the member's purpose
-	role string
 	// Description of the member
-	// Appends to the system message
+	// Appends to the system message as is, with a newline right after the name
 	description string
 	// Appended to the system message
 	// Wrapped in <instructions> tags
 	instructions string
-	// Appended to the system message
-	// Wrapped in <goal> tags
-	goal string
 	// Appended to the system message
 	// Wrapped in <expected_output> tags
 	expectedOutput string

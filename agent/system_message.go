@@ -1,74 +1,65 @@
 package agent
 
 import (
-	"strconv"
 	"strings"
 )
 
 // Build the system message for the Agent
 func (a *Agent) ComputeSystemMessage() (string, error) {
+	if (a.name == "" || a.name == a.id.String()) && a.description == "" && a.instructions == "" && a.expectedOutput == "" && len(a.subordinates) == 0 {
+		// Avoid sending a redundant system message because of the auto-generated UUID.
+		return "", nil
+	}
+
 	var sb strings.Builder
 
 	appendSystemString := func(s, tag string) {
-		if s != "" {
-			if sb.Len() > 0 {
-				sb.WriteRune('\n')
+		if s == "" {
+			return
+		}
+		if tag != "" {
+			sb.WriteString("\n\n")
+			sb.WriteString("<" + tag + ">\n")
+			if strings.Contains(s, "\n") {
+				sb.WriteString(s)
+			} else {
+				sb.WriteString("  " + s)
 			}
-			if tag != "" {
-				sb.WriteString("<" + tag + ">\n")
-			}
+			sb.WriteRune('\n')
+			sb.WriteString("</" + tag + ">")
+		} else if sb.Len() > 0 {
+			sb.WriteRune('\n')
 			sb.WriteString(s)
-			if tag != "" {
-				sb.WriteRune('\n')
-				sb.WriteString("</" + tag + ">")
-			}
+		} else {
+			sb.WriteString(s)
 		}
 	}
 
-	appendSystemString("Your name is "+a.name, "")
+	if a.name != "" {
+		sb.WriteString("Your name is " + a.name + ".")
+	}
 	appendSystemString(a.description, "")
-	appendSystemString(a.goal, "goal")
 	appendSystemString(a.instructions, "instructions")
 	appendSystemString(a.expectedOutput, "expected_output")
 
 	if len(a.subordinates) > 0 {
 		var subordinatesSb strings.Builder
-		subordinatesSb.WriteString("Here are the members in your team:\n")
 		for i, subordinate := range a.subordinates {
-			subordinatesSb.WriteString(" - Agent ")
-			subordinatesSb.WriteString(strconv.Itoa(i + 1))
-			subordinatesSb.WriteString(":\n")
-
+			subordinatesSb.WriteString("  - Name: ")
 			name, err := subordinate.Name()
 			if err != nil {
 				return "", err
 			}
-			subordinatesSb.WriteString("   - Name: ")
 			subordinatesSb.WriteString(name)
+			subordinatesSb.WriteString("\n")
 
 			desc, err := subordinate.Description()
 			if err != nil {
 				return "", err
 			}
 			if desc != "" {
-				subordinatesSb.WriteString("   - Description: ")
+				subordinatesSb.WriteString("    Description: ")
 				subordinatesSb.WriteString(desc)
-				subordinatesSb.WriteByte('\n')
-			}
-
-			tools, err := subordinate.Tools()
-			if err != nil {
-				return "", err
-			}
-			if len(tools) > 0 {
-				subordinatesSb.WriteString("   - Member tools:\n")
-				for _, tool := range tools {
-					subordinatesSb.WriteString("    - ")
-					subordinatesSb.WriteString(tool.Name)
-					subordinatesSb.WriteByte(':')
-					subordinatesSb.WriteString(tool.Description)
-					subordinatesSb.WriteByte('\n')
-				}
 			}
 
 			if i < len(a.subordinates)-1 {

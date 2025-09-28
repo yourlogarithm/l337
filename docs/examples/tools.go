@@ -52,10 +52,10 @@ func divide(ctx context.Context, response *chat.RunResponse, divideParams Divide
 func ToolsExample() {
 	model := openai.NewModel("gpt-4o")
 
-	addTool, _ := tools.NewToolWithArgs("add", "Adds two numbers", add)
-	subtractTool, _ := tools.NewToolWithArgs("subtract", "Subtracts two numbers", subtract)
-	multiplyTool, _ := tools.NewToolWithArgs("multiply", "Multiplies two numbers", multiply)
-	divideTool, _ := tools.NewToolWithArgs("divide", "Divides two numbers", divide)
+	addTool, _ := tools.NewWithArgs("add", "Adds two numbers", add)
+	subtractTool, _ := tools.NewWithArgs("subtract", "Subtracts two numbers", subtract)
+	multiplyTool, _ := tools.NewWithArgs("multiply", "Multiplies two numbers", multiply)
+	divideTool, _ := tools.NewWithArgs("divide", "Divides two numbers", divide)
 
 	mathAgent, err := agent.New(
 		model,

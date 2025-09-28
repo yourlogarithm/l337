@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/openai/openai-go"
+	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/tools"
 )
 
@@ -19,4 +20,14 @@ func convertTool(t *tools.Tool) (tool openai.ChatCompletionToolParam) {
 	}
 
 	return tool
+}
+
+func convertToolCall(toolCall *chat.ToolCall) openai.ChatCompletionMessageToolCallParam {
+	return openai.ChatCompletionMessageToolCallParam{
+		ID: toolCall.ID,
+		Function: openai.ChatCompletionMessageToolCallFunctionParam{
+			Name:      toolCall.Name,
+			Arguments: toolCall.Arguments,
+		},
+	}
 }

@@ -53,3 +53,11 @@ func (rs ResponseChannel) SendErr(err error) {
 func (rs ResponseChannel) Close() {
 	close(rs)
 }
+
+func (rs ResponseChannel) Drain() int {
+	count := 0
+	for range rs {
+		count++
+	}
+	return count
+}

@@ -19,13 +19,6 @@ type AgentOptionFunc func(*Agent) error
 func (s AgentOptionFunc) Apply(r *Agent) error { return s(r) }
 
 func New(model *provider.Model, options ...AgentOption) (*Agent, error) {
-	if model == nil {
-		return nil, ErrBuilderParams{
-			Param: "model",
-			Msg:   "model is required",
-		}
-	}
-
 	defaultID := uuid.New()
 
 	agent := &Agent{
@@ -68,13 +61,6 @@ func WithName(name string) AgentOption {
 	})
 }
 
-func WithRole(role string) AgentOption {
-	return AgentOptionFunc(func(a *Agent) error {
-		a.role = role
-		return nil
-	})
-}
-
 func WithDescription(description string) AgentOption {
 	return AgentOptionFunc(func(a *Agent) error {
 		a.description = description
@@ -85,13 +71,6 @@ func WithDescription(description string) AgentOption {
 func WithInstructions(instructions string) AgentOption {
 	return AgentOptionFunc(func(a *Agent) error {
 		a.instructions = instructions
-		return nil
-	})
-}
-
-func WithGoal(goal string) AgentOption {
-	return AgentOptionFunc(func(a *Agent) error {
-		a.goal = goal
 		return nil
 	})
 }
@@ -116,15 +95,6 @@ func WithMCP(ctx context.Context, session *mcp.ClientSession) AgentOption {
 		return nil
 	})
 }
-
-// func WithRetry(retryOptions *retry.Options) AgentOption {
-// 	return AgentOptionFunc(func(a *Agent) error {
-// 		if retryOptions != nil {
-// 			a.retry = retryOptions
-// 		}
-// 		return nil
-// 	})
-// }
 
 func WithSubordinate(subordinate AgentImpl) AgentOption {
 	return AgentOptionFunc(func(a *Agent) error {
