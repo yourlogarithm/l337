@@ -27,7 +27,11 @@ func (t *Toolkit) RegisterMCP(ctx context.Context, session *mcp.ClientSession) (
 		return 0, err
 	}
 	for _, tool := range listToolsResult.Tools {
-		t.AddTool(convertMCPTool(session, tool))
+		tt, err := convertMCPTool(session, tool)
+		if err != nil {
+			return 0, err
+		}
+		t.AddTool(tt)
 	}
 	return len(listToolsResult.Tools), nil
 }

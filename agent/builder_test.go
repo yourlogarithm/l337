@@ -61,9 +61,9 @@ func TestNewAgent_WithAllOptions(t *testing.T) {
 		toolMap[t.Name] = t
 	}
 
-	assert.Equal(t, "test_tool", agentTools[0].Name)
-	assert.Equal(t, "A test tool", agentTools[0].Description)
+	assert.Equal(t, "test_tool", toolMap["test_tool"].Name)
+	assert.Equal(t, "A test tool", toolMap["test_tool"].Description)
 
-	assert.Equal(t, agent.DELEGATE_TASK_TOOL_NAME, agentTools[1].Name)
-	assert.Equal(t, agent.DELEGATE_TASK_TOOL_DESC, agentTools[1].Description)
+	assert.Equal(t, agent.DELEGATE_TASK_TOOL_NAME, toolMap[agent.DELEGATE_TASK_TOOL_NAME].Name)
+	assert.Equal(t, agent.DELEGATE_TASK_TOOL_DESC, toolMap[agent.DELEGATE_TASK_TOOL_NAME].Description)
 }

@@ -163,16 +163,16 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 						{
 							ID:        "test_tool#0",
 							Name:      "test_tool",
-							Arguments: "\"some",
+							Arguments: "{\"input\":",
 						},
 						{
-							Arguments: " ",
+							Arguments: "\"some ",
 						},
 						{
-							Arguments: " tool ",
+							Arguments: " input\"",
 						},
 						{
-							Arguments: "call\"",
+							Arguments: "}",
 						},
 					}
 					for _, toolCall := range toolCalls {
@@ -185,9 +185,13 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 		},
 	}
 
-	callable := func(ctx context.Context, response *chat.RunResponse, arg string) (string, error) {
+	type arg struct {
+		Input string `json:"input"`
+	}
+
+	callable := func(ctx context.Context, response *chat.RunResponse, arg arg) (string, error) {
 		functionCalls++
-		return arg, nil
+		return arg.Input, nil
 	}
 
 	tool, err := tools.NewWithArgs("test_tool", "A test tool", callable)
