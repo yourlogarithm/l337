@@ -4,49 +4,48 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strconv"
+	"net/http"
+	"os"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/openai/openai-go/option"
 	"github.com/yourlogarithm/l337/agent"
 	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider/ollama"
-	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/provider/openai"
 )
 
-type FooParams struct {
-	I int `json:"superMegaUltra"`
-}
-
-func foo(ctx context.Context, runResponse *chat.RunResponse, params FooParams) (string, error) {
-	return strconv.Itoa(params.I * 3), nil
-}
-
 func main() {
-	client, logger := newLoggingHTTPClient()
+	llmHTTPClient, logger := newLoggingHTTPClient()
 
-	// model := openai.NewModel(
-	// 	"gpt-5-nano",
-	// 	// option.WithBaseURL(os.Getenv("BASE_URL")),
-	// 	option.WithAPIKey(os.Getenv("API_KEY")),
-	// 	option.WithHTTPClient(client),
-	// )
-
-	model, _ := ollama.NewModel(
-		"qwen3:8b",
-		"http://localhost:11434",
-		client,
+	model := openai.NewModel(
+		"gpt-5-nano",
+		// option.WithBaseURL(os.Getenv("BASE_URL")),
+		option.WithAPIKey(os.Getenv("API_KEY")),
+		option.WithHTTPClient(llmHTTPClient),
 	)
 
-	tool, err := tools.NewWithArgs("foo", "Foo tool", foo)
-	if err != nil {
-		panic(err)
-	}
+	// model, _ := ollama.NewModel(
+	// 	"qwen3:8b",
+	// 	"http://localhost:11434",
+	// 	llmHTTPClient,
+	// )
 
 	options := chat.Options{
 		// ReasoningEffort: chat.NewReasoningEffortBool(true),
-		ReasoningEffort: chat.NewReasoningEffortBool(true),
 	}
 
-	a, err := agent.New(model, agent.WithTool(tool), agent.WithChatOptions(options))
+	mcpClient := mcp.NewClient(&mcp.Implementation{}, nil)
+	transport := mcp.SSEClientTransport{
+		Endpoint:   "http://localhost:8080/",
+		HTTPClient: http.DefaultClient,
+	}
+	session, err := mcpClient.Connect(context.Background(), &transport, nil)
+	if err != nil {
+		panic(err)
+	}
+	defer session.Close()
+
+	a, err := agent.New(model, agent.WithChatOptions(options), agent.WithMCP(context.Background(), session))
 	if err != nil {
 		panic(err)
 	}
@@ -54,7 +53,7 @@ func main() {
 	runResponse, stream, err := a.RunStreamingWithParams(
 		context.Background(),
 		0,
-		chat.WithMessage(chat.RoleUser, "Concurrently call `foo` tool 3 times with a different value."),
+		chat.WithMessage(chat.RoleUser, "Call greet concurrently with names Alice, Bob, and Charlie."),
 	)
 	if err != nil {
 		fmt.Printf("Error occurred: %v\n", err)
