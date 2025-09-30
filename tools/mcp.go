@@ -11,31 +11,21 @@ import (
 	"github.com/yourlogarithm/l337/chat"
 )
 
-type MCPRegisterResult struct {
-	NumTools             int
-	NumResources         int
-	NumResourceTemplates int
-}
-
-func (t *Toolkit) RegisterMCP(ctx context.Context, session *mcp.ClientSession) (result MCPRegisterResult, err error) {
+func (t *Toolkit) RegisterMCP(ctx context.Context, session *mcp.ClientSession) (int, error) {
 	listToolsResult, err := session.ListTools(ctx, nil)
 	if err != nil {
-		return result, err
+		return 0, err
 	}
-
-	result.NumTools = len(listToolsResult.Tools)
 
 	for _, tool := range listToolsResult.Tools {
 		tt, err := convertMCPTool(session, tool)
 		if err != nil {
-			return result, err
+			return 0, err
 		}
 		t.AddTool(tt)
 	}
 
-	// TODO: Register resources and resource templates.
-
-	return result, nil
+	return len(listToolsResult.Tools), nil
 }
 
 func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) (Tool, error) {
