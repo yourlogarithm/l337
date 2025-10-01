@@ -36,7 +36,7 @@ func TestAgent_RunStreaming_ChatStreamingErrorSendAndReturn(t *testing.T) {
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithTextMessage(chat.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	chunk, err := channel.Next()
@@ -61,7 +61,7 @@ func TestAgent_RunStreaming_StreamErr(t *testing.T) {
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithTextMessage(chat.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	chunk, err := channel.Next()
@@ -89,7 +89,7 @@ func TestAgent_RunStreaming_AddChunkError(t *testing.T) {
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithTextMessage(chat.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	chunk, err := channel.Next()
@@ -127,7 +127,7 @@ func TestAgent_RunStreaming_AccumulateUntilEOF(t *testing.T) {
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	runResponse, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, chat.WithMessage(chat.RoleUser, "Hello"))
+	runResponse, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, chat.WithTextMessage(chat.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	var accumulated string
@@ -141,8 +141,8 @@ func TestAgent_RunStreaming_AccumulateUntilEOF(t *testing.T) {
 
 	assert.Equal(t, "Hello World", accumulated)
 	assert.Equal(t, 2, len(runResponse.Messages))
-	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: "Hello"}, runResponse.Messages[0])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: "Hello World"}, runResponse.Messages[1])
+	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, runResponse.Messages[0])
+	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent("Hello World")}, runResponse.Messages[1])
 	assert.Equal(t, 1, len(runResponse.Metrics))
 }
 
@@ -189,9 +189,9 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 		Input string `json:"input"`
 	}
 
-	callable := func(ctx context.Context, response *chat.RunResponse, arg arg) (string, error) {
+	callable := func(ctx context.Context, response *chat.RunResponse, arg arg) ([]chat.Content, error) {
 		functionCalls++
-		return arg.Input, nil
+		return chat.NewTextContent(arg.Input).AsSlice(), nil
 	}
 
 	tool, err := tools.NewWithArgs("test_tool", "A test tool", callable)
@@ -199,7 +199,7 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 
 	agentInstance, _ := agent.New(model.Wrap(), agent.WithTool(tool))
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, chat.WithMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, chat.WithTextMessage(chat.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	channel.Drain()

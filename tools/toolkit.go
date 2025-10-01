@@ -1,11 +1,5 @@
 package tools
 
-import (
-	"context"
-
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-)
-
 // Helper map for managing tools.
 type Toolkit map[string]Tool
 
@@ -19,19 +13,4 @@ func (t *Toolkit) AddTool(tool Tool) {
 		*t = make(Toolkit)
 	}
 	(*t)[tool.Name] = tool
-}
-
-func (t *Toolkit) RegisterMCP(ctx context.Context, session *mcp.ClientSession) (int, error) {
-	listToolsResult, err := session.ListTools(ctx, nil)
-	if err != nil {
-		return 0, err
-	}
-	for _, tool := range listToolsResult.Tools {
-		tt, err := convertMCPTool(session, tool)
-		if err != nil {
-			return 0, err
-		}
-		t.AddTool(tt)
-	}
-	return len(listToolsResult.Tools), nil
 }

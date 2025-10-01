@@ -28,7 +28,7 @@ func AgentExample() {
 
 	response, err := agent.RunWithParams(
 		context.Background(),
-		chat.WithMessage(chat.RoleUser, "What was your greatest failure, and what did you learn from it?"),
+		chat.WithTextMessage(chat.RoleUser, "What was your greatest failure, and what did you learn from it?"),
 	)
 	if err != nil {
 		panic(err)

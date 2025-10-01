@@ -19,7 +19,7 @@ func TestAgent_Run_NilModel(t *testing.T) {
 	agentInstance, err := agent.New(nil, agent.WithName("TestAgent"))
 	require.NoError(t, err)
 
-	_, err = agentInstance.RunWithParams(t.Context(), chat.WithMessage(chat.RoleUser, "Hello"))
+	_, err = agentInstance.RunWithParams(t.Context(), chat.WithTextMessage(chat.RoleUser, "Hello"))
 	assert.Error(t, err)
 	assert.Equal(t, agent.ErrBuilderParams{Param: "model", Msg: "nil"}, err)
 }
@@ -39,7 +39,7 @@ func TestAgent_Run_SystemMessageNotAppendedIfEmpty(t *testing.T) {
 	model := MockModel{
 		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
 			assert.Equal(t, 1, len(req.Messages))
-			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: "Hello"}, req.Messages[0])
+			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, req.Messages[0])
 			return provider.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
@@ -49,7 +49,7 @@ func TestAgent_Run_SystemMessageNotAppendedIfEmpty(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 
 	assert.NoError(t, err)
@@ -59,8 +59,8 @@ func TestAgent_Run_SystemMessageAppendedIfNotProvided(t *testing.T) {
 	model := MockModel{
 		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
 			assert.Equal(t, 2, len(req.Messages))
-			assert.Equal(t, chat.Message{Role: chat.RoleSystem, Content: "Your name is TestAgent.\nA test agent"}, req.Messages[0])
-			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: "Hello"}, req.Messages[1])
+			assert.Equal(t, chat.Message{Role: chat.RoleSystem, Content: chat.NewTextContent("Your name is TestAgent.\nA test agent")}, req.Messages[0])
+			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, req.Messages[1])
 			return provider.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
@@ -74,7 +74,7 @@ func TestAgent_Run_SystemMessageAppendedIfNotProvided(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 	assert.NoError(t, err)
 }
@@ -83,8 +83,8 @@ func TestAgent_Run_SystemMessageNotAppendedIfProvided(t *testing.T) {
 	model := MockModel{
 		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
 			assert.Equal(t, 2, len(req.Messages))
-			assert.Equal(t, chat.Message{Role: chat.RoleSystem, Content: "Custom system message"}, req.Messages[0])
-			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: "Hello"}, req.Messages[1])
+			assert.Equal(t, chat.Message{Role: chat.RoleSystem, Content: chat.NewTextContent("Custom system message")}, req.Messages[0])
+			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, req.Messages[1])
 			return provider.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
@@ -98,8 +98,8 @@ func TestAgent_Run_SystemMessageNotAppendedIfProvided(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleSystem, "Custom system message"),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleSystem, "Custom system message"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 	assert.NoError(t, err)
 }
@@ -138,7 +138,7 @@ func TestAgent_Run_ToolsPassed(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 	assert.NoError(t, err)
 }
@@ -155,7 +155,7 @@ func TestAgent_Run_ErrorEmptyFinishReason(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 	require.Error(t, err)
 	assert.Equal(t, agent.ErrModelResponse{Msg: "no finish reason"}, err)
@@ -185,9 +185,10 @@ func TestAgent_Run_ContinueUntilNoToolsCalled(t *testing.T) {
 		ChatStreamingFunc: nil,
 	}
 
-	tool := tools.New("test_tool", "A test tool", func(ctx context.Context) (string, error) {
+	tool := tools.New("test_tool", "A test tool", func(ctx context.Context) ([]chat.Content, error) {
 		funcCalls++
-		return "tool response " + strconv.Itoa(funcCalls), nil
+		content := chat.NewTextContent("tool response " + strconv.Itoa(funcCalls))
+		return content.AsSlice(), nil
 	})
 
 	agentInstance, _ := agent.New(
@@ -197,7 +198,7 @@ func TestAgent_Run_ContinueUntilNoToolsCalled(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 	require.NoError(t, err)
 	assert.Equal(t, 3, chatCalls)
@@ -219,15 +220,15 @@ func TestAgent_Run_AssistantMessageAppended(t *testing.T) {
 
 	runResponse, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 
 	require.NoError(t, err)
 	require.NotNil(t, runResponse)
 
 	require.Equal(t, 2, len(runResponse.Messages))
-	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: "Hello"}, runResponse.Messages[0])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: "This is the assistant response."}, runResponse.Messages[1])
+	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, runResponse.Messages[0])
+	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent("This is the assistant response.")}, runResponse.Messages[1])
 }
 
 func TestAgent_Run_MetricsPopulated(t *testing.T) {
@@ -253,7 +254,7 @@ func TestAgent_Run_MetricsPopulated(t *testing.T) {
 
 	runResponse, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 
 	require.NoError(t, err)
@@ -293,8 +294,8 @@ func TestAgent_Run_ToolErrorHandling(t *testing.T) {
 		ChatStreamingFunc: nil,
 	}
 
-	tool := tools.New("error_tool", "A tool that returns an error", func(ctx context.Context) (string, error) {
-		return "", assert.AnError
+	tool := tools.New("error_tool", "A tool that returns an error", func(ctx context.Context) ([]chat.Content, error) {
+		return nil, assert.AnError
 	})
 
 	agentInstance, _ := agent.New(
@@ -304,13 +305,13 @@ func TestAgent_Run_ToolErrorHandling(t *testing.T) {
 
 	runResponse, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithMessage(chat.RoleUser, "Hello"),
+		chat.WithTextMessage(chat.RoleUser, "Hello"),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, runResponse)
 	require.Equal(t, 4, len(runResponse.Messages))
-	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: "Hello"}, runResponse.Messages[0])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: "", ToolCalls: []chat.ToolCall{{ID: "call_id_1", Name: "error_tool", Arguments: ""}}}, runResponse.Messages[1])
-	assert.Equal(t, chat.Message{Role: chat.RoleTool, Name: "call_id_1", Content: "error: " + assert.AnError.Error(), IsErr: true}, runResponse.Messages[2])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: "Finished after tool call."}, runResponse.Messages[3])
+	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, runResponse.Messages[0])
+	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent(""), ToolCalls: []chat.ToolCall{{ID: "call_id_1", Name: "error_tool", Arguments: ""}}}, runResponse.Messages[1])
+	assert.Equal(t, chat.Message{Role: chat.RoleTool, Name: "call_id_1", Content: chat.NewTextContent("error: " + assert.AnError.Error()), IsErr: true}, runResponse.Messages[2])
+	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent("Finished after tool call.")}, runResponse.Messages[3])
 }

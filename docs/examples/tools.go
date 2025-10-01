@@ -15,8 +15,8 @@ type AddParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func add(ctx context.Context, response *chat.RunResponse, addParams AddParams) (string, error) {
-	return fmt.Sprintf("%f", addParams.A+addParams.B), nil
+func add(ctx context.Context, response *chat.RunResponse, addParams AddParams) ([]chat.Content, error) {
+	return chat.NewTextContent(fmt.Sprintf("%f", addParams.A+addParams.B)).AsSlice(), nil
 }
 
 type SubtractParams struct {
@@ -24,8 +24,8 @@ type SubtractParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func subtract(ctx context.Context, response *chat.RunResponse, subtractParams SubtractParams) (string, error) {
-	return fmt.Sprintf("%f", subtractParams.A-subtractParams.B), nil
+func subtract(ctx context.Context, response *chat.RunResponse, subtractParams SubtractParams) ([]chat.Content, error) {
+	return chat.NewTextContent(fmt.Sprintf("%f", subtractParams.A-subtractParams.B)).AsSlice(), nil
 }
 
 type MultiplyParams struct {
@@ -33,8 +33,8 @@ type MultiplyParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func multiply(ctx context.Context, response *chat.RunResponse, multiplyParams MultiplyParams) (string, error) {
-	return fmt.Sprintf("%f", multiplyParams.A*multiplyParams.B), nil
+func multiply(ctx context.Context, response *chat.RunResponse, multiplyParams MultiplyParams) ([]chat.Content, error) {
+	return chat.NewTextContent(fmt.Sprintf("%f", multiplyParams.A*multiplyParams.B)).AsSlice(), nil
 }
 
 type DivideParams struct {
@@ -42,11 +42,11 @@ type DivideParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func divide(ctx context.Context, response *chat.RunResponse, divideParams DivideParams) (string, error) {
+func divide(ctx context.Context, response *chat.RunResponse, divideParams DivideParams) ([]chat.Content, error) {
 	if divideParams.B != 0 {
-		return fmt.Sprintf("%f", divideParams.A/divideParams.B), nil
+		return chat.NewTextContent(fmt.Sprintf("%f", divideParams.A/divideParams.B)).AsSlice(), nil
 	}
-	return "division by zero error", nil
+	return chat.NewTextContent("division by zero error").AsSlice(), nil
 }
 
 func ToolsExample() {
@@ -73,7 +73,7 @@ func ToolsExample() {
 
 	response, err := mathAgent.RunWithParams(
 		context.Background(),
-		chat.WithMessage(chat.RoleUser, "What is 5 + 3?"),
+		chat.WithTextMessage(chat.RoleUser, "What is 5 + 3?"),
 	)
 	if err != nil {
 		panic(err)

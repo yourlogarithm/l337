@@ -53,7 +53,7 @@ func TeamExample() {
 
 	response, err := starWarsTeam.RunWithParams(
 		context.Background(),
-		chat.WithMessage(chat.RoleUser, "Who was the most powerful Jedi?"),
+		chat.WithTextMessage(chat.RoleUser, "Who was the most powerful Jedi?"),
 	)
 	if err != nil {
 		panic(err)
@@ -62,7 +62,7 @@ func TeamExample() {
 
 	response, err = starWarsTeam.RunWithParams(
 		context.Background(),
-		chat.WithMessage(chat.RoleUser, "Who was the most powerful Sith?"),
+		chat.WithTextMessage(chat.RoleUser, "Who was the most powerful Sith?"),
 	)
 	if err != nil {
 		panic(err)
