@@ -33,7 +33,7 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 		if level, ok := options.ReasoningEffort.AsLevel(); ok {
 			params.ReasoningEffort = shared.ReasoningEffort(level)
 		} else {
-			return params, ErrParams{Param: "ReasoningEffort", Msg: fmt.Sprintf("invalid reasoning effort: %v", options.ReasoningEffort)}
+			return params, provider.ErrParams{Param: "ReasoningEffort", Msg: fmt.Sprintf("invalid reasoning effort: %v", options.ReasoningEffort)}
 		}
 	}
 	if options.MaxTokens > 0 {
@@ -68,32 +68,35 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 	for _, msg := range request.Messages {
 		var openaiMsg openai.ChatCompletionMessageParamUnion
 		var nameParam *param.Opt[string]
+		if msg.Content.Image != nil {
+			return params, provider.ErrParams{Param: "Message.Content.Image", Msg: "openai-go api does not support image message content"}
+		}
 		switch msg.Role {
 		case chat.RoleDeveloper:
 			developerMsg := openai.ChatCompletionDeveloperMessageParam{}
-			if msg.Content != "" {
-				developerMsg.Content.OfString = param.NewOpt(msg.Content)
+			if msg.Content.Text != "" {
+				developerMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfDeveloper: &developerMsg}
 			nameParam = &openaiMsg.OfDeveloper.Name
 		case chat.RoleSystem:
 			systemMsg := openai.ChatCompletionSystemMessageParam{}
-			if msg.Content != "" {
-				systemMsg.Content.OfString = param.NewOpt(msg.Content)
+			if msg.Content.Text != "" {
+				systemMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfSystem: &systemMsg}
 			nameParam = &openaiMsg.OfSystem.Name
 		case chat.RoleUser:
 			userMsg := openai.ChatCompletionUserMessageParam{}
-			if msg.Content != "" {
-				userMsg.Content.OfString = param.NewOpt(msg.Content)
+			if msg.Content.Text != "" {
+				userMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfUser: &userMsg}
 			nameParam = &openaiMsg.OfUser.Name
 		case chat.RoleAssistant:
 			assistantMsg := openai.ChatCompletionAssistantMessageParam{}
-			if msg.Content != "" {
-				assistantMsg.Content.OfString = param.NewOpt(msg.Content)
+			if msg.Content.Text != "" {
+				assistantMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			}
 			if len(msg.ToolCalls) > 0 {
 				assistantMsg.ToolCalls = make([]openai.ChatCompletionMessageToolCallParam, len(msg.ToolCalls))
@@ -107,8 +110,8 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 			toolMsg := openai.ChatCompletionToolMessageParam{
 				ToolCallID: msg.Name,
 			}
-			if msg.Content != "" {
-				toolMsg.Content.OfString = param.NewOpt(msg.Content)
+			if msg.Content.Text != "" {
+				toolMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfTool: &toolMsg}
 		default:

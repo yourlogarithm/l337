@@ -20,3 +20,15 @@ type ErrChunkAddition struct {
 func (e ErrChunkAddition) Error() string {
 	return fmt.Sprintf("failed to add chunk %v to accumulator %v", e.Chunk, e.Accumulator)
 }
+
+type ErrParams struct {
+	Msg   string
+	Param string
+}
+
+func (e ErrParams) Error() string {
+	if e.Msg != "" {
+		return "invalid parameter " + e.Param + ": " + e.Msg
+	}
+	return "invalid parameter: " + e.Param
+}

@@ -47,10 +47,10 @@ func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) (Tool, error)
 	t := Tool{
 		Name:        mcpTool.Name,
 		Description: mcpTool.Description,
-		callable: func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error) {
+		callable: func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
 			args := map[string]any{}
 			if err := json.Unmarshal([]byte(rawArguments), &args); err != nil {
-				return "", err
+				return nil, err
 			}
 			params := &mcp.CallToolParams{
 				Name:      mcpTool.Name,
@@ -58,9 +58,9 @@ func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) (Tool, error)
 			}
 			callResult, err := session.CallTool(ctx, params)
 			if err != nil {
-				return "", err
+				return nil, err
 			} else if callResult.IsError {
-				return "", fmt.Errorf("tool call error: %s", callResult.Content)
+				return nil, fmt.Errorf("tool call error: %s", callResult.Content)
 			}
 			var sb strings.Builder
 			for i, content := range callResult.Content {
@@ -70,7 +70,7 @@ func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) (Tool, error)
 						sb.WriteByte('\n')
 					}
 				} else {
-					return "", fmt.Errorf("unsupported content type: %T", content)
+					return nil, fmt.Errorf("unsupported content type: %T", content)
 				}
 			}
 
@@ -81,14 +81,14 @@ func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) (Tool, error)
 			if outputLoader != nil {
 				result, err := gojsonschema.Validate(*outputLoader, gojsonschema.NewStringLoader(out))
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 				if !result.Valid() {
-					return "", fmt.Errorf("output does not conform to schema: %v", result.Errors())
+					return nil, fmt.Errorf("output does not conform to schema: %v", result.Errors())
 				}
 			}
 
-			return out, nil
+			return chat.NewTextContent(out).AsSlice(), nil
 		},
 	}
 

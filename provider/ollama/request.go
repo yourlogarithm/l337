@@ -59,7 +59,13 @@ func buildChatRequest(o *ollamaProvider, request *provider.Request, options *cha
 		if msg.Role == chat.RoleTool {
 			req.Messages[i].ToolName = msg.Name
 		}
-		req.Messages[i].Content = msg.Content
+		req.Messages[i].Content = msg.Content.Text
+		if msg.Content.Image != nil {
+			if msg.Content.Image.Url != "" {
+				return nil, provider.ErrParams{Param: "Message.Content.Image", Msg: "ollama api does not support image url message content, use bytes buffer instead"}
+			}
+			req.Messages[i].Images = append(req.Messages[i].Images, msg.Content.Image.Content)
+		}
 		if len(msg.ToolCalls) > 0 {
 			req.Messages[i].ToolCalls = make([]api.ToolCall, len(msg.ToolCalls))
 			toolCalls := req.Messages[i].ToolCalls

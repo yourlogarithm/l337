@@ -20,30 +20,30 @@ type Tool struct {
 	callable ToolCallable `json:"-"`
 }
 
-func (t Tool) Call(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error) {
+func (t Tool) Call(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
 	return t.callable(ctx, runResponse, rawArguments)
 }
 
-type ToolCallable func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) (string, error)
+type ToolCallable func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) ([]chat.Content, error)
 
-type ToolCallableTyped[T any] func(context.Context, *chat.RunResponse, T) (string, error)
+type ToolCallableTyped[T any] func(context.Context, *chat.RunResponse, T) ([]chat.Content, error)
 
 func wrapCallable[T any](fn ToolCallableTyped[T]) ToolCallable {
-	return func(ctx context.Context, response *chat.RunResponse, rawArguments string) (string, error) {
+	return func(ctx context.Context, response *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
 		var args T
 		if err := json.Unmarshal([]byte(rawArguments), &args); err != nil {
-			return "", err
+			return nil, err
 		}
 		return fn(ctx, response, args)
 	}
 }
 
 // Declare tool that does not require any arguments
-func New(name, description string, callable func(ctx context.Context) (string, error)) Tool {
+func New(name, description string, callable func(ctx context.Context) ([]chat.Content, error)) Tool {
 	return Tool{
 		Name:        name,
 		Description: description,
-		callable: func(ctx context.Context, response *chat.RunResponse, rawArguments string) (string, error) {
+		callable: func(ctx context.Context, response *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
 			return callable(ctx)
 		},
 	}
