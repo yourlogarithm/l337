@@ -5,7 +5,7 @@ go 1.24.5
 require (
 	github.com/google/uuid v1.6.0
 	github.com/invopop/jsonschema v0.13.0
-	github.com/modelcontextprotocol/go-sdk v0.8.0
+	github.com/modelcontextprotocol/go-sdk v1.0.0
 	github.com/ollama/ollama v0.12.3
 	github.com/openai/openai-go v1.12.0
 	github.com/stretchr/testify v1.11.1

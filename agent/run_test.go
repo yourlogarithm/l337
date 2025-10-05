@@ -210,7 +210,7 @@ func TestAgent_Run_AssistantMessageAppended(t *testing.T) {
 		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
 			return provider.Response{
 				FinishReason: "stop",
-				Content:      "This is the assistant response.",
+				Content:      chat.NewTextContent("This is the assistant response."),
 			}, nil
 		},
 		ChatStreamingFunc: nil,
@@ -236,7 +236,7 @@ func TestAgent_Run_MetricsPopulated(t *testing.T) {
 		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
 			return provider.Response{
 				FinishReason: "stop",
-				Content:      "This is the assistant response.",
+				Content:      chat.NewTextContent("This is the assistant response."),
 				Metrics: metrics.Metrics{
 					PromptTokens:     10,
 					CompletionTokens: 20,
@@ -276,7 +276,7 @@ func TestAgent_Run_ToolErrorHandling(t *testing.T) {
 			if toolCalled {
 				return provider.Response{
 					FinishReason: "stop",
-					Content:      "Finished after tool call.",
+					Content:      chat.NewTextContent("Finished after tool call."),
 				}, nil
 			}
 			toolCalled = true

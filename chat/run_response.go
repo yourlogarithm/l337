@@ -5,10 +5,24 @@ import (
 	"github.com/yourlogarithm/l337/metrics"
 )
 
+type Modality string
+
+const (
+	ModalityText  Modality = "text"
+	ModalityAudio Modality = "audio"
+)
+
+type AudioRequest struct {
+	Voice  string      `json:"voice"`
+	Format AudioFormat `json:"format"`
+}
+
 type RunResponse struct {
-	SessionID uuid.UUID                       `json:"session_id"`
-	Messages  []Message                       `json:"messages"`
-	Metrics   map[uuid.UUID][]metrics.Metrics `json:"metrics"`
+	SessionID  uuid.UUID                       `json:"session_id"`
+	Messages   []Message                       `json:"messages,omitempty"`
+	Metrics    map[uuid.UUID][]metrics.Metrics `json:"metrics,omitempty"`
+	Modalities []Modality                      `json:"modalities,omitempty"`
+	Audio      AudioRequest                    `json:"audio,omitzero"`
 }
 
 // Returns the content of the last message in the response.

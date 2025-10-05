@@ -27,7 +27,12 @@ func (o *openAIProvider) Chat(ctx context.Context, request *provider.Request, op
 	response.Created = time.Unix(chatCompletion.Created, 0)
 	choice := chatCompletion.Choices[0]
 
-	response.Content = choice.Message.Content
+	response.Content = chat.NewTextContent(choice.Message.Content)
+	if choice.Message.Audio.Data != "" {
+		response.Content.Audio = &chat.Audio{
+			Base64: choice.Message.Audio.Data,
+		}
+	}
 	response.Refusal = choice.Message.Refusal
 	response.ToolCalls = make([]chat.ToolCall, len(choice.Message.ToolCalls))
 	response.FinishReason = choice.FinishReason

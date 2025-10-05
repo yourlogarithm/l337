@@ -16,7 +16,7 @@ type Request struct {
 type Response struct {
 	ID           string          `json:"id"`
 	Created      time.Time       `json:"created"`
-	Content      string          `json:"content"`
+	Content      chat.Content    `json:"content"`
 	Refusal      string          `json:"refusal"`
 	Reasoning    string          `json:"reasoning"`
 	ToolCalls    []chat.ToolCall `json:"tool_calls"`

@@ -108,7 +108,7 @@ func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunRespons
 
 	msg := chat.Message{
 		Role:      chat.RoleAssistant,
-		Content:   chat.NewTextContent(chatResponse.Content),
+		Content:   chatResponse.Content,
 		Reasoning: chatResponse.Reasoning,
 		ToolCalls: chatResponse.ToolCalls,
 	}

@@ -45,21 +45,16 @@ func (c *RemoteAgent) Run(ctx context.Context, runResponse *chat.RunResponse) er
 }
 
 func (c *RemoteAgent) RunWithParams(ctx context.Context, params ...chat.Parameter) (chat.RunResponse, error) {
-	var runParams chat.Parameters
+	runResponse := &chat.RunResponse{
+		Metrics: make(map[uuid.UUID][]metrics.Metrics),
+	}
 	for _, param := range params {
-		if err := param.Apply(&runParams); err != nil {
+		if err := param.Apply(runResponse); err != nil {
 			return chat.RunResponse{}, err
 		}
 	}
-	if len(runParams.Messages) == 0 {
+	if len(runResponse.Messages) == 0 {
 		return chat.RunResponse{}, agent.ErrBuilderParams{Param: "Messages", Msg: "at least one message is required to run chat"}
 	}
-
-	runResponse := &chat.RunResponse{
-		SessionID: runParams.SessionID,
-		Messages:  runParams.Messages,
-		Metrics:   make(map[uuid.UUID][]metrics.Metrics),
-	}
-
 	return *runResponse, c.Run(ctx, runResponse)
 }

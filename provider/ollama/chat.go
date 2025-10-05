@@ -20,7 +20,7 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *provider.Request, op
 		response.Created = ollamaResp.CreatedAt
 		response.FinishReason = ollamaResp.DoneReason
 		response.Reasoning = ollamaResp.Message.Thinking
-		response.Content = ollamaResp.Message.Content
+		response.Content = chat.NewTextContent(ollamaResp.Message.Content)
 		response.Metrics = convertMetrics(&ollamaResp.Metrics)
 
 		for _, toolCall := range ollamaResp.Message.ToolCalls {

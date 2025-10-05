@@ -53,7 +53,7 @@ func TestAgent_RunStreaming_StreamErr(t *testing.T) {
 			ch := provider.NewResponseChannel(1)
 			go func() {
 				defer ch.Close()
-				ch.Send(&provider.Response{Content: "Hello"})
+				ch.Send(&provider.Response{Content: chat.NewTextContent("Hello")})
 				ch.SendErr(assert.AnError)
 			}()
 			return ch, nil
@@ -66,7 +66,7 @@ func TestAgent_RunStreaming_StreamErr(t *testing.T) {
 
 	chunk, err := channel.Next()
 	assert.NoError(t, err)
-	assert.Equal(t, "Hello", chunk.Content)
+	assert.Equal(t, chat.NewTextContent("Hello"), chunk.Content)
 
 	_, err = channel.Next()
 	assert.Equal(t, assert.AnError, err)
@@ -81,8 +81,8 @@ func TestAgent_RunStreaming_AddChunkError(t *testing.T) {
 			ch := provider.NewResponseChannel(1)
 			go func() {
 				defer ch.Close()
-				ch.Send(&provider.Response{ID: "a", Content: "Hello"})
-				ch.Send(&provider.Response{ID: "b", Content: "World"})
+				ch.Send(&provider.Response{ID: "a", Content: chat.NewTextContent("Hello")})
+				ch.Send(&provider.Response{ID: "b", Content: chat.NewTextContent("World")})
 			}()
 			return ch, nil
 		},
@@ -94,7 +94,7 @@ func TestAgent_RunStreaming_AddChunkError(t *testing.T) {
 
 	chunk, err := channel.Next()
 	assert.NoError(t, err)
-	assert.Equal(t, "Hello", chunk.Content)
+	assert.Equal(t, chat.NewTextContent("Hello"), chunk.Content)
 
 	_, err = channel.Next()
 	assert.Error(t, err)
@@ -103,10 +103,10 @@ func TestAgent_RunStreaming_AddChunkError(t *testing.T) {
 	assert.True(t, ok)
 
 	assert.Equal(t, "a", errChunkAddition.Accumulator.ID)
-	assert.Equal(t, "Hello", errChunkAddition.Accumulator.Content)
+	assert.Equal(t, chat.NewTextContent("Hello"), errChunkAddition.Accumulator.Content)
 
 	assert.Equal(t, "b", errChunkAddition.Chunk.ID)
-	assert.Equal(t, "World", errChunkAddition.Chunk.Content)
+	assert.Equal(t, chat.NewTextContent("World"), errChunkAddition.Chunk.Content)
 
 	_, err = channel.Next()
 	assert.Equal(t, io.EOF, err)
@@ -118,9 +118,9 @@ func TestAgent_RunStreaming_AccumulateUntilEOF(t *testing.T) {
 			ch := provider.NewResponseChannel(0)
 			go func() {
 				defer ch.Close()
-				ch.Send(&provider.Response{Content: "Hello"})
-				ch.Send(&provider.Response{Content: " "})
-				ch.Send(&provider.Response{Content: "World", FinishReason: "stop"})
+				ch.Send(&provider.Response{Content: chat.NewTextContent("Hello")})
+				ch.Send(&provider.Response{Content: chat.NewTextContent(" ")})
+				ch.Send(&provider.Response{Content: chat.NewTextContent("World"), FinishReason: "stop"})
 			}()
 			return ch, nil
 		},
@@ -136,7 +136,8 @@ func TestAgent_RunStreaming_AccumulateUntilEOF(t *testing.T) {
 		if err == io.EOF {
 			break
 		}
-		accumulated += chunk.Content
+		assert.NoError(t, err)
+		accumulated += chunk.Content.Text
 	}
 
 	assert.Equal(t, "Hello World", accumulated)
@@ -157,7 +158,7 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 			go func() {
 				defer ch.Close()
 				if chatCalls > 3 {
-					ch.Send(&provider.Response{Content: "Final response", FinishReason: "stop"})
+					ch.Send(&provider.Response{Content: chat.NewTextContent("Final response"), FinishReason: "stop"})
 				} else {
 					toolCalls := []chat.ToolCall{
 						{

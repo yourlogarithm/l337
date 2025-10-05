@@ -4,29 +4,24 @@ import (
 	"github.com/google/uuid"
 )
 
-type Parameters struct {
-	Messages  []Message
-	SessionID uuid.UUID
-}
-
 type Parameter interface {
-	Apply(*Parameters) error
+	Apply(*RunResponse) error
 }
 
-type ParameterFunc func(*Parameters) error
+type ParameterFunc func(*RunResponse) error
 
-func (s ParameterFunc) Apply(r *Parameters) error { return s(r) }
+func (s ParameterFunc) Apply(r *RunResponse) error { return s(r) }
 
 func WithSessionID(sessionID uuid.UUID) Parameter {
-	return ParameterFunc(func(p *Parameters) error {
-		p.SessionID = sessionID
+	return ParameterFunc(func(r *RunResponse) error {
+		r.SessionID = sessionID
 		return nil
 	})
 }
 
 func WithTextMessage(role Role, content string) Parameter {
-	return ParameterFunc(func(p *Parameters) error {
-		p.Messages = append(p.Messages, Message{
+	return ParameterFunc(func(r *RunResponse) error {
+		r.Messages = append(r.Messages, Message{
 			Role:    role,
 			Content: NewTextContent(content),
 		})
@@ -35,8 +30,8 @@ func WithTextMessage(role Role, content string) Parameter {
 }
 
 func WithImageUrlMessage(role Role, imageURL string) Parameter {
-	return ParameterFunc(func(p *Parameters) error {
-		p.Messages = append(p.Messages, Message{
+	return ParameterFunc(func(r *RunResponse) error {
+		r.Messages = append(r.Messages, Message{
 			Role:    role,
 			Content: NewImageUrlContent(imageURL),
 		})
@@ -44,12 +39,29 @@ func WithImageUrlMessage(role Role, imageURL string) Parameter {
 	})
 }
 
-func WithImageContentMessage(role Role, imageContent []byte) Parameter {
-	return ParameterFunc(func(p *Parameters) error {
-		p.Messages = append(p.Messages, Message{
+func WithImageContentMessage(role Role, imageContent []byte, format ImageFormat) Parameter {
+	return ParameterFunc(func(r *RunResponse) error {
+		r.Messages = append(r.Messages, Message{
 			Role:    role,
-			Content: NewImageContent(imageContent),
+			Content: NewImageContent(imageContent, format),
 		})
+		return nil
+	})
+}
+
+func WithModalities(modalities ...Modality) Parameter {
+	return ParameterFunc(func(r *RunResponse) error {
+		r.Modalities = append(r.Modalities, modalities...)
+		return nil
+	})
+}
+
+func WithAudioRequest(voice string, format AudioFormat) Parameter {
+	return ParameterFunc(func(r *RunResponse) error {
+		r.Audio = AudioRequest{
+			Voice:  voice,
+			Format: format,
+		}
 		return nil
 	})
 }

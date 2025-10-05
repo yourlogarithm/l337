@@ -2,6 +2,7 @@ package openai
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/packages/param"
@@ -68,14 +69,13 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 	for _, msg := range request.Messages {
 		var openaiMsg openai.ChatCompletionMessageParamUnion
 		var nameParam *param.Opt[string]
-		if msg.Content.Image != nil {
-			return params, provider.ErrParams{Param: "Message.Content.Image", Msg: "openai-go api does not support image message content"}
-		}
 		switch msg.Role {
 		case chat.RoleDeveloper:
 			developerMsg := openai.ChatCompletionDeveloperMessageParam{}
 			if msg.Content.Text != "" {
 				developerMsg.Content.OfString = param.NewOpt(msg.Content.Text)
+			} else {
+				return params, provider.ErrParams{Param: "Message.Content", Msg: "developer messages must have non-empty text content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfDeveloper: &developerMsg}
 			nameParam = &openaiMsg.OfDeveloper.Name
@@ -83,6 +83,8 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 			systemMsg := openai.ChatCompletionSystemMessageParam{}
 			if msg.Content.Text != "" {
 				systemMsg.Content.OfString = param.NewOpt(msg.Content.Text)
+			} else {
+				return params, provider.ErrParams{Param: "Message.Content", Msg: "system messages must have non-empty text content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfSystem: &systemMsg}
 			nameParam = &openaiMsg.OfSystem.Name
@@ -90,6 +92,35 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 			userMsg := openai.ChatCompletionUserMessageParam{}
 			if msg.Content.Text != "" {
 				userMsg.Content.OfString = param.NewOpt(msg.Content.Text)
+			} else if msg.Content.Audio != nil {
+				userMsg.Content.OfArrayOfContentParts = append(userMsg.Content.OfArrayOfContentParts, openai.ChatCompletionContentPartUnionParam{
+					OfInputAudio: &openai.ChatCompletionContentPartInputAudioParam{
+						InputAudio: openai.ChatCompletionContentPartInputAudioInputAudioParam{
+							Data:   msg.Content.Audio.Base64,
+							Format: string(msg.Content.Audio.Format),
+						},
+					},
+				})
+			} else if msg.Content.Image != nil {
+				var url strings.Builder
+				if msg.Content.Image.ImageData != nil {
+					url.WriteString("data:image/")
+					url.WriteString(string(msg.Content.Image.ImageData.Format))
+					url.WriteString(";base64,")
+					url.WriteString(msg.Content.Image.ImageData.Base64)
+				} else if msg.Content.Image.Url != "" {
+					url.WriteString(msg.Content.Image.Url)
+				}
+				userMsg.Content.OfArrayOfContentParts = append(userMsg.Content.OfArrayOfContentParts, openai.ChatCompletionContentPartUnionParam{
+					OfImageURL: &openai.ChatCompletionContentPartImageParam{
+						ImageURL: openai.ChatCompletionContentPartImageImageURLParam{
+							URL:    url.String(),
+							Detail: string(msg.Content.Image.Detail),
+						},
+					},
+				})
+			} else {
+				return params, provider.ErrParams{Param: "Message.Content", Msg: "user messages must have non-empty text, audio, or image content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfUser: &userMsg}
 			nameParam = &openaiMsg.OfUser.Name
@@ -97,6 +128,8 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 			assistantMsg := openai.ChatCompletionAssistantMessageParam{}
 			if msg.Content.Text != "" {
 				assistantMsg.Content.OfString = param.NewOpt(msg.Content.Text)
+			} else {
+				return params, provider.ErrParams{Param: "Message.Content", Msg: "assistant messages must have non-empty text content"}
 			}
 			if len(msg.ToolCalls) > 0 {
 				assistantMsg.ToolCalls = make([]openai.ChatCompletionMessageToolCallParam, len(msg.ToolCalls))
@@ -112,6 +145,8 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 			}
 			if msg.Content.Text != "" {
 				toolMsg.Content.OfString = param.NewOpt(msg.Content.Text)
+			} else {
+				return params, provider.ErrParams{Param: "Message.Content", Msg: "tool messages must have non-empty text content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfTool: &toolMsg}
 		default:
