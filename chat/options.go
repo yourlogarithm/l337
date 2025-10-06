@@ -64,6 +64,23 @@ type Options struct {
 	IncludeStreamMetrics bool
 	// l337: Controls channel buffering for streaming responses. Defaults to `0` (unbuffered).
 	StreamingBufferSize int
+	// OpenAI: Output types that you would like the model to generate. Defaults to `["text"]`.
+	//     - `text`: Plain text output.
+	//     - `audio`: Audio output (if supported by model).
+	Modalities []Modality
+	Audio      AudioOutput
+}
+
+type Modality string
+
+const (
+	ModalityText  Modality = "text"
+	ModalityAudio Modality = "audio"
+)
+
+type AudioOutput struct {
+	Voice  string      `json:"voice"`
+	Format AudioFormat `json:"format"`
 }
 
 // Only one can be set

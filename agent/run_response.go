@@ -7,18 +7,13 @@ import (
 )
 
 func BuildRunResponse(params ...chat.Parameter) (*chat.RunResponse, error) {
-	var runParams chat.Parameters
+	runResponse := &chat.RunResponse{
+		Metrics: make(map[uuid.UUID][]metrics.Metrics),
+	}
 	for _, param := range params {
-		if err := param.Apply(&runParams); err != nil {
+		if err := param.Apply(runResponse); err != nil {
 			return nil, err
 		}
 	}
-
-	runResponse := chat.RunResponse{
-		SessionID: runParams.SessionID,
-		Messages:  runParams.Messages,
-		Metrics:   make(map[uuid.UUID][]metrics.Metrics),
-	}
-
-	return &runResponse, nil
+	return runResponse, nil
 }

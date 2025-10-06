@@ -31,7 +31,7 @@ func (o *ollamaProvider) ChatStreaming(
 				Created:      ollamaResp.CreatedAt,
 				FinishReason: ollamaResp.DoneReason,
 				Reasoning:    ollamaResp.Message.Thinking,
-				Content:      ollamaResp.Message.Content,
+				Content:      chat.NewTextContent(ollamaResp.Message.Content),
 				Metrics:      convertMetrics(&ollamaResp.Metrics),
 			}
 

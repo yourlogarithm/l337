@@ -15,7 +15,7 @@ func (acc *ContentAccumulator) AddChunk(chunk *Response) error {
 	}
 
 	acc.Response.Created = chunk.Created
-	acc.Response.Content += chunk.Content
+	acc.Response.Content.Text += chunk.Content.Text
 	acc.Response.Refusal += chunk.Refusal
 	acc.Response.Reasoning += chunk.Reasoning
 	acc.Response.FinishReason += chunk.FinishReason

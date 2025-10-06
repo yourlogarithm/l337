@@ -46,7 +46,7 @@ func (o *openAIProvider) ChatStreaming(
 			response := provider.Response{
 				ID:      chunk.ID,
 				Created: time.Unix(chunk.Created, 0),
-				Content: choice.Delta.Content,
+				Content: chat.NewTextContent(choice.Delta.Content),
 				Refusal: choice.Delta.Refusal,
 				// Reasoning:    choice.Delta.ReasoningContent,
 				FinishReason: choice.FinishReason,

@@ -83,7 +83,7 @@ func (a *Agent) addSystemMessageIfMissing(runResponse *chat.RunResponse) error {
 		if content != "" {
 			systemMsg := chat.Message{
 				Role:    chat.RoleSystem,
-				Content: content,
+				Content: chat.NewTextContent(content),
 			}
 			runResponse.Messages = slices.Insert(runResponse.Messages, 0, systemMsg)
 		}
@@ -132,11 +132,11 @@ func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunRespons
 
 		type ToolCallResult struct {
 			ToolCall *chat.ToolCall
-			Content  string
+			Content  chat.Content
 			IsErr    bool
 		}
 
-		results := make(map[string]ToolCallResult, len(chatResponse.ToolCalls))
+		tool_call_results_map := make(map[string][]ToolCallResult, len(chatResponse.ToolCalls))
 		order := make([]string, 0, len(chatResponse.ToolCalls))
 
 		for _, toolCall := range chatResponse.ToolCalls {
@@ -144,45 +144,50 @@ func (a *Agent) handleResponse(ctx context.Context, runResponse *chat.RunRespons
 			tc := toolCall
 			go func(toolCall *chat.ToolCall) {
 				defer wg.Done()
-				var content string
+				var contents []chat.Content
 				var isErr bool
 
 				tool, exists := a.tools.Get(toolCall.Name)
 				if exists {
 					result, err := tool.Call(ctx, runResponse, toolCall.Arguments)
 					if err != nil {
-						content = "error: " + err.Error()
+						contents = append(contents, chat.NewTextContent("error: "+err.Error()))
 						isErr = true
 					} else {
-						content = result
+						contents = append(contents, result...)
 					}
 				} else {
-					content = fmt.Sprintf("error: tool not found: %s", toolCall.Name)
+					contents = append(contents, chat.NewTextContent(fmt.Sprintf("error: tool not found: %s", toolCall.Name)))
 				}
 				mu.Lock()
 				defer mu.Unlock()
-				results[toolCall.ID] = ToolCallResult{
-					ToolCall: toolCall,
-					Content:  content,
-					IsErr:    isErr,
+				tool_call_results_map[toolCall.ID] = make([]ToolCallResult, 0, len(contents))
+				for _, content := range contents {
+					tool_call_results_map[toolCall.ID] = append(tool_call_results_map[toolCall.ID], ToolCallResult{
+						ToolCall: toolCall,
+						Content:  content,
+						IsErr:    isErr,
+					})
 				}
 			}(&tc)
 		}
 		wg.Wait()
 
 		for _, id := range order {
-			result, exists := results[id]
+			tool_call_results, exists := tool_call_results_map[id]
 			if !exists {
 				return false, ErrModelResponse{
 					Msg: fmt.Sprintf("tool call result not found for ID: %s", id),
 				}
 			}
-			runResponse.Messages = append(runResponse.Messages, chat.Message{
-				Role:    chat.RoleTool,
-				Content: result.Content,
-				Name:    result.ToolCall.ID,
-				IsErr:   result.IsErr,
-			})
+			for _, result := range tool_call_results {
+				runResponse.Messages = append(runResponse.Messages, chat.Message{
+					Role:    chat.RoleTool,
+					Content: result.Content,
+					Name:    result.ToolCall.ID,
+					IsErr:   result.IsErr,
+				})
+			}
 		}
 
 		return true, nil

@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -30,15 +29,15 @@ func addDelegateTaskTool(agent *Agent) error {
 		}
 	}
 
-	delegateTask := func(ctx context.Context, response *chat.RunResponse, delegateTaskParams delegateTaskParams) (string, error) {
+	delegateTask := func(ctx context.Context, response *chat.RunResponse, delegateTaskParams delegateTaskParams) ([]chat.Content, error) {
 		logger.Debug(DELEGATE_TASK_TOOL_NAME, "params", delegateTaskParams)
 
 		if len(delegateTaskParams.Names) == 0 {
-			return "", fmt.Errorf("no subordinates specified")
+			return nil, fmt.Errorf("no subordinates specified")
 		}
 
 		if delegateTaskParams.ExpectedOutput == "" {
-			return "", fmt.Errorf("no expected output specified")
+			return nil, fmt.Errorf("no expected output specified")
 		}
 
 		nameSet := make(map[string]struct{}, len(delegateTaskParams.Names))
@@ -48,17 +47,17 @@ func addDelegateTaskTool(agent *Agent) error {
 
 		msg := chat.Message{
 			Role:    chat.RoleUser,
-			Content: delegateTaskParams.ExpectedOutput,
+			Content: chat.NewTextContent(delegateTaskParams.ExpectedOutput),
 		}
 
 		var wg sync.WaitGroup
 
-		var sb strings.Builder
+		responses := make([]chat.Content, 0, len(delegateTaskParams.Names))
 
 		for i := range agent.subordinates {
 			name, err := agent.subordinates[i].Name()
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 			if _, exists := nameSet[name]; exists {
 				wg.Add(1)
@@ -78,9 +77,9 @@ func addDelegateTaskTool(agent *Agent) error {
 						}
 					}
 					if err != nil {
-						sb.WriteString(fmt.Sprintf("(%s) Error: %s\n", name, err.Error()))
+						responses = append(responses, chat.NewTextContent(fmt.Sprintf("(%s) Error: %s", name, err.Error())))
 					} else {
-						sb.WriteString(fmt.Sprintf("(%s) Response: %s\n", name, subordinateRunResponse.Content()))
+						responses = append(responses, subordinateRunResponse.Content())
 					}
 				}(agent.subordinates[i], name)
 			}
@@ -88,7 +87,7 @@ func addDelegateTaskTool(agent *Agent) error {
 
 		wg.Wait()
 
-		return sb.String(), nil
+		return responses, nil
 	}
 
 	tool, err := tools.NewWithArgs(DELEGATE_TASK_TOOL_NAME, DELEGATE_TASK_TOOL_DESC, delegateTask)
