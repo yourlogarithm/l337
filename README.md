@@ -20,9 +20,9 @@ go get github.com/yourlogarithm/l337
 
 Refer to the following examples to get started:
 
-- [Agent Example](docs/examples/agent.go)
-- [Team Example](docs/examples/team.go)
-- [Tools Example](docs/examples/tools.go)
+- [Agent Example](examples/agent.go)
+- [Team Example](examples/team.go)
+- [Tools Example](examples/tools.go)
 
 # Contributing
 
