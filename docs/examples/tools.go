@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider/openai"
+	"github.com/yourlogarithm/l337/providers/openai"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 type AddParams struct {
@@ -15,8 +15,8 @@ type AddParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func add(ctx context.Context, response *chat.RunResponse, addParams AddParams) ([]chat.Content, error) {
-	return chat.NewTextContent(fmt.Sprintf("%f", addParams.A+addParams.B)).AsSlice(), nil
+func add(ctx context.Context, run *types.Run, addParams AddParams) ([]types.Content, error) {
+	return types.NewTextContent(fmt.Sprintf("%f", addParams.A+addParams.B)).AsSlice(), nil
 }
 
 type SubtractParams struct {
@@ -24,8 +24,8 @@ type SubtractParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func subtract(ctx context.Context, response *chat.RunResponse, subtractParams SubtractParams) ([]chat.Content, error) {
-	return chat.NewTextContent(fmt.Sprintf("%f", subtractParams.A-subtractParams.B)).AsSlice(), nil
+func subtract(ctx context.Context, run *types.Run, subtractParams SubtractParams) ([]types.Content, error) {
+	return types.NewTextContent(fmt.Sprintf("%f", subtractParams.A-subtractParams.B)).AsSlice(), nil
 }
 
 type MultiplyParams struct {
@@ -33,8 +33,8 @@ type MultiplyParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func multiply(ctx context.Context, response *chat.RunResponse, multiplyParams MultiplyParams) ([]chat.Content, error) {
-	return chat.NewTextContent(fmt.Sprintf("%f", multiplyParams.A*multiplyParams.B)).AsSlice(), nil
+func multiply(ctx context.Context, run *types.Run, multiplyParams MultiplyParams) ([]types.Content, error) {
+	return types.NewTextContent(fmt.Sprintf("%f", multiplyParams.A*multiplyParams.B)).AsSlice(), nil
 }
 
 type DivideParams struct {
@@ -42,11 +42,11 @@ type DivideParams struct {
 	B float32 `json:"b" jsonschema:"required"`
 }
 
-func divide(ctx context.Context, response *chat.RunResponse, divideParams DivideParams) ([]chat.Content, error) {
+func divide(ctx context.Context, run *types.Run, divideParams DivideParams) ([]types.Content, error) {
 	if divideParams.B != 0 {
-		return chat.NewTextContent(fmt.Sprintf("%f", divideParams.A/divideParams.B)).AsSlice(), nil
+		return types.NewTextContent(fmt.Sprintf("%f", divideParams.A/divideParams.B)).AsSlice(), nil
 	}
-	return chat.NewTextContent("division by zero error").AsSlice(), nil
+	return types.NewTextContent("division by zero error").AsSlice(), nil
 }
 
 func ToolsExample() {
@@ -73,7 +73,7 @@ func ToolsExample() {
 
 	response, err := mathAgent.RunWithParams(
 		context.Background(),
-		chat.WithTextMessage(chat.RoleUser, "What is 5 + 3?"),
+		types.WithTextMessage(types.RoleUser, "What is 5 + 3?"),
 	)
 	if err != nil {
 		panic(err)

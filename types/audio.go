@@ -1,4 +1,4 @@
-package chat
+package types
 
 type AudioFormat string
 
@@ -14,4 +14,9 @@ const (
 type Audio struct {
 	Base64 string      `json:"base64,omitempty"`
 	Format AudioFormat `json:"format,omitempty"`
+}
+
+type AudioOutput struct {
+	Voice  string      `json:"voice"`
+	Format AudioFormat `json:"format"`
 }

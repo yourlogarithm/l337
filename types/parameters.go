@@ -1,26 +1,26 @@
-package chat
+package types
 
 import (
 	"github.com/google/uuid"
 )
 
 type Parameter interface {
-	Apply(*RunResponse) error
+	Apply(*Run) error
 }
 
-type ParameterFunc func(*RunResponse) error
+type ParameterFunc func(*Run) error
 
-func (s ParameterFunc) Apply(r *RunResponse) error { return s(r) }
+func (s ParameterFunc) Apply(r *Run) error { return s(r) }
 
 func WithSessionID(sessionID uuid.UUID) Parameter {
-	return ParameterFunc(func(r *RunResponse) error {
+	return ParameterFunc(func(r *Run) error {
 		r.SessionID = sessionID
 		return nil
 	})
 }
 
 func WithTextMessage(role Role, content string) Parameter {
-	return ParameterFunc(func(r *RunResponse) error {
+	return ParameterFunc(func(r *Run) error {
 		r.Messages = append(r.Messages, Message{
 			Role:    role,
 			Content: NewTextContent(content),
@@ -30,7 +30,7 @@ func WithTextMessage(role Role, content string) Parameter {
 }
 
 func WithImageUrlMessage(role Role, imageURL string) Parameter {
-	return ParameterFunc(func(r *RunResponse) error {
+	return ParameterFunc(func(r *Run) error {
 		r.Messages = append(r.Messages, Message{
 			Role:    role,
 			Content: NewImageUrlContent(imageURL),
@@ -40,7 +40,7 @@ func WithImageUrlMessage(role Role, imageURL string) Parameter {
 }
 
 func WithImageContentMessage(role Role, imageContent []byte, format ImageFormat) Parameter {
-	return ParameterFunc(func(r *RunResponse) error {
+	return ParameterFunc(func(r *Run) error {
 		r.Messages = append(r.Messages, Message{
 			Role:    role,
 			Content: NewImageContent(imageContent, format),
@@ -50,7 +50,7 @@ func WithImageContentMessage(role Role, imageContent []byte, format ImageFormat)
 }
 
 func WithAudioContentMessage(role Role, audioContent []byte, format AudioFormat) Parameter {
-	return ParameterFunc(func(r *RunResponse) error {
+	return ParameterFunc(func(r *Run) error {
 		r.Messages = append(r.Messages, Message{
 			Role:    role,
 			Content: NewAudioContent(audioContent, format),

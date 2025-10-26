@@ -8,7 +8,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/xeipuuv/gojsonschema"
-	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/types"
 )
 
 func (t *Toolkit) RegisterMCP(ctx context.Context, session *mcp.ClientSession) (int, error) {
@@ -47,7 +47,7 @@ func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) (Tool, error)
 	t := Tool{
 		Name:        mcpTool.Name,
 		Description: mcpTool.Description,
-		callable: func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
+		callable: func(ctx context.Context, run *types.Run, rawArguments string) ([]types.Content, error) {
 			args := map[string]any{}
 			if err := json.Unmarshal([]byte(rawArguments), &args); err != nil {
 				return nil, err
@@ -88,7 +88,7 @@ func convertMCPTool(session *mcp.ClientSession, mcpTool *mcp.Tool) (Tool, error)
 				}
 			}
 
-			return chat.NewTextContent(out).AsSlice(), nil
+			return types.NewTextContent(out).AsSlice(), nil
 		},
 	}
 

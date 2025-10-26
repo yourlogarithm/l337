@@ -1,4 +1,4 @@
-package chat
+package types
 
 type Message struct {
 	Role      Role    `json:"role"`
@@ -12,13 +12,4 @@ type Message struct {
 	Refusal string `json:"refusal"`
 	// Anthropic: User boolean indicating whether function call resulted in an error.
 	IsErr bool `json:"is_err"`
-}
-
-type ToolCall struct {
-	// Unique identifier for the tool call.
-	ID string `json:"id"`
-	// Raw LLM arguments.
-	Arguments string `json:"arguments"`
-	// Tool name
-	Name string `json:"name"`
 }

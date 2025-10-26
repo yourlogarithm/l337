@@ -2,18 +2,18 @@ package agent
 
 import (
 	"github.com/google/uuid"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func BuildRunResponse(params ...chat.Parameter) (*chat.RunResponse, error) {
-	runResponse := &chat.RunResponse{
+func BuildRun(params ...types.Parameter) (*types.Run, error) {
+	run := &types.Run{
 		Metrics: make(map[uuid.UUID][]metrics.Metrics),
 	}
 	for _, param := range params {
-		if err := param.Apply(runResponse); err != nil {
+		if err := param.Apply(run); err != nil {
 			return nil, err
 		}
 	}
-	return runResponse, nil
+	return run, nil
 }

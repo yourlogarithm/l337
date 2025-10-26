@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/internal/logging"
+	"github.com/yourlogarithm/l337/types"
 )
 
 var serverLogger = logging.SetupLogger("remote.server")
@@ -92,33 +92,33 @@ func (r *AgentServer) Tools(w http.ResponseWriter, req *http.Request) {
 	serverLogger.Info("Tools", "method", req.Method, "path", req.URL.Path)
 }
 
-func parseRunRequest(w http.ResponseWriter, req *http.Request) *chat.RunResponse {
+func parseRunRequest(w http.ResponseWriter, req *http.Request) *types.Run {
 	if req.Method != http.MethodPost {
 		serverLogger.Info("Invalid request method", "method", req.Method, "path", req.URL.Path)
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return nil
 	}
 
-	var runResponse chat.RunResponse
-	if err := json.NewDecoder(req.Body).Decode(&runResponse); err != nil {
+	var run types.Run
+	if err := json.NewDecoder(req.Body).Decode(&run); err != nil {
 		serverLogger.Info("Failed to parse request body", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to parse request body: %v", err), http.StatusBadRequest)
 		return nil
 	}
 
-	return &runResponse
+	return &run
 }
 
 func (r *AgentServer) Run(w http.ResponseWriter, req *http.Request) {
 	serverLogger.Debug("Run", "method", req.Method, "path", req.URL.Path)
 
-	runResponse := parseRunRequest(w, req)
-	if runResponse == nil {
+	run := parseRunRequest(w, req)
+	if run == nil {
 		return
 	}
 
 	ctx := req.Context()
-	err := r.Agent.Run(ctx, runResponse)
+	err := r.Agent.Run(ctx, run)
 	if err != nil {
 		serverLogger.Error("Failed to execute run", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to execute run: %v", err), http.StatusInternalServerError)
@@ -126,7 +126,7 @@ func (r *AgentServer) Run(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(runResponse); err != nil {
+	if err := json.NewEncoder(w).Encode(run); err != nil {
 		serverLogger.Error("Failed to encode response", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
@@ -137,13 +137,13 @@ func (r *AgentServer) Run(w http.ResponseWriter, req *http.Request) {
 func (r *AgentServer) RunStreaming(w http.ResponseWriter, req *http.Request) {
 	serverLogger.Debug("RunStreaming", "method", req.Method, "path", req.URL.Path)
 
-	runResponse := parseRunRequest(w, req)
-	if runResponse == nil {
+	run := parseRunRequest(w, req)
+	if run == nil {
 		return
 	}
 
 	ctx := req.Context()
-	stream, err := r.Agent.RunStreaming(ctx, runResponse, r.StreamingBufferSize)
+	stream, err := r.Agent.RunStreaming(ctx, run, r.StreamingBufferSize)
 	if err != nil {
 		serverLogger.Error("Failed to execute run streaming", "error", err, "path", req.URL.Path)
 		http.Error(w, fmt.Sprintf("Failed to execute run streaming: %v", err), http.StatusInternalServerError)
@@ -196,7 +196,7 @@ streamingLoop:
 	}
 
 	if ok {
-		sendEvent("response", runResponse)
+		sendEvent("response", run)
 	}
 
 	serverLogger.Info("RunStreaming", "method", req.Method, "path", req.URL.Path)

@@ -8,12 +8,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func (c *RemoteAgent) Run(ctx context.Context, runResponse *chat.RunResponse) error {
-	body, err := json.Marshal(runResponse)
+func (c *RemoteAgent) Run(ctx context.Context, run *types.Run) error {
+	body, err := json.Marshal(run)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (c *RemoteAgent) Run(ctx context.Context, runResponse *chat.RunResponse) er
 		return err
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&runResponse); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&run); err != nil {
 		return ErrServerResponse{
 			Err:        err,
 			StatusCode: resp.StatusCode,
@@ -44,17 +44,17 @@ func (c *RemoteAgent) Run(ctx context.Context, runResponse *chat.RunResponse) er
 	return nil
 }
 
-func (c *RemoteAgent) RunWithParams(ctx context.Context, params ...chat.Parameter) (chat.RunResponse, error) {
-	runResponse := &chat.RunResponse{
+func (c *RemoteAgent) RunWithParams(ctx context.Context, params ...types.Parameter) (types.Run, error) {
+	run := &types.Run{
 		Metrics: make(map[uuid.UUID][]metrics.Metrics),
 	}
 	for _, param := range params {
-		if err := param.Apply(runResponse); err != nil {
-			return chat.RunResponse{}, err
+		if err := param.Apply(run); err != nil {
+			return types.Run{}, err
 		}
 	}
-	if len(runResponse.Messages) == 0 {
-		return chat.RunResponse{}, agent.ErrBuilderParams{Param: "Messages", Msg: "at least one message is required to run chat"}
+	if len(run.Messages) == 0 {
+		return types.Run{}, agent.ErrBuilderParams{Param: "Messages", Msg: "at least one message is required to run chat"}
 	}
-	return *runResponse, c.Run(ctx, runResponse)
+	return *run, c.Run(ctx, run)
 }

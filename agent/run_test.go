@@ -9,17 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
-	"github.com/yourlogarithm/l337/provider"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 func TestAgent_Run_NilModel(t *testing.T) {
 	agentInstance, err := agent.New(nil, agent.WithName("TestAgent"))
 	require.NoError(t, err)
 
-	_, err = agentInstance.RunWithParams(t.Context(), chat.WithTextMessage(chat.RoleUser, "Hello"))
+	_, err = agentInstance.RunWithParams(t.Context(), types.WithTextMessage(types.RoleUser, "Hello"))
 	assert.Error(t, err)
 	assert.Equal(t, agent.ErrBuilderParams{Param: "model", Msg: "nil"}, err)
 }
@@ -37,10 +36,10 @@ func TestAgent_Run_EmptyMessages(t *testing.T) {
 
 func TestAgent_Run_SystemMessageNotAppendedIfEmpty(t *testing.T) {
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
-			assert.Equal(t, 1, len(req.Messages))
-			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, req.Messages[0])
-			return provider.Response{FinishReason: "stop"}, nil
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
+			assert.Equal(t, 1, len(messages))
+			assert.Equal(t, types.Message{Role: types.RoleUser, Content: types.NewTextContent("Hello")}, messages[0])
+			return types.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
 	}
@@ -49,7 +48,7 @@ func TestAgent_Run_SystemMessageNotAppendedIfEmpty(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 
 	assert.NoError(t, err)
@@ -57,11 +56,11 @@ func TestAgent_Run_SystemMessageNotAppendedIfEmpty(t *testing.T) {
 
 func TestAgent_Run_SystemMessageAppendedIfNotProvided(t *testing.T) {
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
-			assert.Equal(t, 2, len(req.Messages))
-			assert.Equal(t, chat.Message{Role: chat.RoleSystem, Content: chat.NewTextContent("Your name is TestAgent.\nA test agent")}, req.Messages[0])
-			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, req.Messages[1])
-			return provider.Response{FinishReason: "stop"}, nil
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
+			assert.Equal(t, 2, len(messages))
+			assert.Equal(t, types.Message{Role: types.RoleSystem, Content: types.NewTextContent("Your name is TestAgent.\nA test agent")}, messages[0])
+			assert.Equal(t, types.Message{Role: types.RoleUser, Content: types.NewTextContent("Hello")}, messages[1])
+			return types.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
 	}
@@ -74,18 +73,18 @@ func TestAgent_Run_SystemMessageAppendedIfNotProvided(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 	assert.NoError(t, err)
 }
 
 func TestAgent_Run_SystemMessageNotAppendedIfProvided(t *testing.T) {
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
-			assert.Equal(t, 2, len(req.Messages))
-			assert.Equal(t, chat.Message{Role: chat.RoleSystem, Content: chat.NewTextContent("Custom system message")}, req.Messages[0])
-			assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, req.Messages[1])
-			return provider.Response{FinishReason: "stop"}, nil
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
+			assert.Equal(t, 2, len(messages))
+			assert.Equal(t, types.Message{Role: types.RoleSystem, Content: types.NewTextContent("Custom system message")}, messages[0])
+			assert.Equal(t, types.Message{Role: types.RoleUser, Content: types.NewTextContent("Hello")}, messages[1])
+			return types.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
 	}
@@ -98,19 +97,19 @@ func TestAgent_Run_SystemMessageNotAppendedIfProvided(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleSystem, "Custom system message"),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleSystem, "Custom system message"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 	assert.NoError(t, err)
 }
 
 func TestAgent_Run_ToolsPassed(t *testing.T) {
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
-			assert.Equal(t, 2, len(req.Tools)) // Including the delegate_task tool
+		ChatFunc: func(ctx context.Context, messages []types.Message, toolsSlice []tools.Tool, opts *types.Options) (types.Response, error) {
+			assert.Equal(t, 2, len(toolsSlice)) // Including the delegate_task tool
 
 			toolMap := make(map[string]tools.Tool)
-			for _, t := range req.Tools {
+			for _, t := range toolsSlice {
 				toolMap[t.Name] = t
 			}
 
@@ -120,7 +119,7 @@ func TestAgent_Run_ToolsPassed(t *testing.T) {
 			assert.Equal(t, agent.DELEGATE_TASK_TOOL_NAME, toolMap[agent.DELEGATE_TASK_TOOL_NAME].Name)
 			assert.Equal(t, agent.DELEGATE_TASK_TOOL_DESC, toolMap[agent.DELEGATE_TASK_TOOL_NAME].Description)
 
-			return provider.Response{FinishReason: "stop"}, nil
+			return types.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
 	}
@@ -138,15 +137,15 @@ func TestAgent_Run_ToolsPassed(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 	assert.NoError(t, err)
 }
 
 func TestAgent_Run_ErrorEmptyFinishReason(t *testing.T) {
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
-			return provider.Response{}, nil
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
+			return types.Response{}, nil
 		},
 		ChatStreamingFunc: nil,
 	}
@@ -155,7 +154,7 @@ func TestAgent_Run_ErrorEmptyFinishReason(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 	require.Error(t, err)
 	assert.Equal(t, agent.ErrModelResponse{Msg: "no finish reason"}, err)
@@ -166,12 +165,12 @@ func TestAgent_Run_ContinueUntilNoToolsCalled(t *testing.T) {
 	funcCalls := 0
 
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
 			if chatCalls < 3 {
 				chatCalls++
-				return provider.Response{
+				return types.Response{
 					FinishReason: "tool_call",
-					ToolCalls: []chat.ToolCall{
+					ToolCalls: []types.ToolCall{
 						{
 							ID:        strconv.Itoa(chatCalls),
 							Name:      "test_tool",
@@ -180,14 +179,14 @@ func TestAgent_Run_ContinueUntilNoToolsCalled(t *testing.T) {
 					},
 				}, nil
 			}
-			return provider.Response{FinishReason: "stop"}, nil
+			return types.Response{FinishReason: "stop"}, nil
 		},
 		ChatStreamingFunc: nil,
 	}
 
-	tool := tools.New("test_tool", "A test tool", func(ctx context.Context) ([]chat.Content, error) {
+	tool := tools.New("test_tool", "A test tool", func(ctx context.Context) ([]types.Content, error) {
 		funcCalls++
-		content := chat.NewTextContent("tool response " + strconv.Itoa(funcCalls))
+		content := types.NewTextContent("tool response " + strconv.Itoa(funcCalls))
 		return content.AsSlice(), nil
 	})
 
@@ -198,7 +197,7 @@ func TestAgent_Run_ContinueUntilNoToolsCalled(t *testing.T) {
 
 	_, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 	require.NoError(t, err)
 	assert.Equal(t, 3, chatCalls)
@@ -207,10 +206,10 @@ func TestAgent_Run_ContinueUntilNoToolsCalled(t *testing.T) {
 
 func TestAgent_Run_AssistantMessageAppended(t *testing.T) {
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
-			return provider.Response{
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
+			return types.Response{
 				FinishReason: "stop",
-				Content:      chat.NewTextContent("This is the assistant response."),
+				Content:      types.NewTextContent("This is the assistant response."),
 			}, nil
 		},
 		ChatStreamingFunc: nil,
@@ -218,25 +217,25 @@ func TestAgent_Run_AssistantMessageAppended(t *testing.T) {
 
 	agentInstance, _ := agent.New(model.Wrap())
 
-	runResponse, err := agentInstance.RunWithParams(
+	run, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 
 	require.NoError(t, err)
-	require.NotNil(t, runResponse)
+	require.NotNil(t, run)
 
-	require.Equal(t, 2, len(runResponse.Messages))
-	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, runResponse.Messages[0])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent("This is the assistant response.")}, runResponse.Messages[1])
+	require.Equal(t, 2, len(run.Messages))
+	assert.Equal(t, types.Message{Role: types.RoleUser, Content: types.NewTextContent("Hello")}, run.Messages[0])
+	assert.Equal(t, types.Message{Role: types.RoleAssistant, Content: types.NewTextContent("This is the assistant response.")}, run.Messages[1])
 }
 
 func TestAgent_Run_MetricsPopulated(t *testing.T) {
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
-			return provider.Response{
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
+			return types.Response{
 				FinishReason: "stop",
-				Content:      chat.NewTextContent("This is the assistant response."),
+				Content:      types.NewTextContent("This is the assistant response."),
 				Metrics: metrics.Metrics{
 					PromptTokens:     10,
 					CompletionTokens: 20,
@@ -252,16 +251,16 @@ func TestAgent_Run_MetricsPopulated(t *testing.T) {
 		agent.WithID(uuid.Max),
 	)
 
-	runResponse, err := agentInstance.RunWithParams(
+	run, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 
 	require.NoError(t, err)
-	require.NotNil(t, runResponse)
-	require.NotNil(t, runResponse.Metrics)
+	require.NotNil(t, run)
+	require.NotNil(t, run.Metrics)
 
-	metricsList, exists := runResponse.Metrics[uuid.Max]
+	metricsList, exists := run.Metrics[uuid.Max]
 	require.True(t, exists)
 	require.Equal(t, 1, len(metricsList))
 	assert.Equal(t, uint(10), metricsList[0].PromptTokens)
@@ -272,17 +271,17 @@ func TestAgent_Run_MetricsPopulated(t *testing.T) {
 func TestAgent_Run_ToolErrorHandling(t *testing.T) {
 	toolCalled := false
 	model := MockModel{
-		ChatFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.Response, error) {
+		ChatFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (types.Response, error) {
 			if toolCalled {
-				return provider.Response{
+				return types.Response{
 					FinishReason: "stop",
-					Content:      chat.NewTextContent("Finished after tool call."),
+					Content:      types.NewTextContent("Finished after tool call."),
 				}, nil
 			}
 			toolCalled = true
-			return provider.Response{
+			return types.Response{
 				FinishReason: "tool_call",
-				ToolCalls: []chat.ToolCall{
+				ToolCalls: []types.ToolCall{
 					{
 						ID:        "call_id_1",
 						Name:      "error_tool",
@@ -294,7 +293,7 @@ func TestAgent_Run_ToolErrorHandling(t *testing.T) {
 		ChatStreamingFunc: nil,
 	}
 
-	tool := tools.New("error_tool", "A tool that returns an error", func(ctx context.Context) ([]chat.Content, error) {
+	tool := tools.New("error_tool", "A tool that returns an error", func(ctx context.Context) ([]types.Content, error) {
 		return nil, assert.AnError
 	})
 
@@ -303,15 +302,15 @@ func TestAgent_Run_ToolErrorHandling(t *testing.T) {
 		agent.WithTool(tool),
 	)
 
-	runResponse, err := agentInstance.RunWithParams(
+	run, err := agentInstance.RunWithParams(
 		t.Context(),
-		chat.WithTextMessage(chat.RoleUser, "Hello"),
+		types.WithTextMessage(types.RoleUser, "Hello"),
 	)
 	require.NoError(t, err)
-	require.NotNil(t, runResponse)
-	require.Equal(t, 4, len(runResponse.Messages))
-	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, runResponse.Messages[0])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent(""), ToolCalls: []chat.ToolCall{{ID: "call_id_1", Name: "error_tool", Arguments: ""}}}, runResponse.Messages[1])
-	assert.Equal(t, chat.Message{Role: chat.RoleTool, Name: "call_id_1", Content: chat.NewTextContent("error: " + assert.AnError.Error()), IsErr: true}, runResponse.Messages[2])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent("Finished after tool call.")}, runResponse.Messages[3])
+	require.NotNil(t, run)
+	require.Equal(t, 4, len(run.Messages))
+	assert.Equal(t, types.Message{Role: types.RoleUser, Content: types.NewTextContent("Hello")}, run.Messages[0])
+	assert.Equal(t, types.Message{Role: types.RoleAssistant, Content: types.NewTextContent(""), ToolCalls: []types.ToolCall{{ID: "call_id_1", Name: "error_tool", Arguments: ""}}}, run.Messages[1])
+	assert.Equal(t, types.Message{Role: types.RoleTool, Name: "call_id_1", Content: types.NewTextContent("error: " + assert.AnError.Error()), IsErr: true}, run.Messages[2])
+	assert.Equal(t, types.Message{Role: types.RoleAssistant, Content: types.NewTextContent("Finished after tool call.")}, run.Messages[3])
 }

@@ -5,16 +5,17 @@ import (
 	"strconv"
 
 	"github.com/ollama/ollama/api"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/providers"
+	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func buildChatRequest(o *ollamaProvider, request *provider.Request, options *chat.Options, stream bool) (*api.ChatRequest, error) {
+func buildChatRequest(o *ollamaProvider, messages []types.Message, tools []tools.Tool, options *types.Options, stream bool) (*api.ChatRequest, error) {
 	req := &api.ChatRequest{
 		Model:    o.model,
-		Messages: make([]api.Message, len(request.Messages)),
+		Messages: make([]api.Message, len(messages)),
 		Stream:   &stream,
-		Tools:    make([]api.Tool, 0, len(request.Tools)),
+		Tools:    make([]api.Tool, 0, len(tools)),
 		Options:  make(map[string]any),
 	}
 
@@ -54,20 +55,20 @@ func buildChatRequest(o *ollamaProvider, request *provider.Request, options *cha
 		req.Options["top_p"] = *options.TopP
 	}
 
-	for i, msg := range request.Messages {
+	for i, msg := range messages {
 		req.Messages[i].Role = msg.Role.String()
-		if msg.Role == chat.RoleTool {
+		if msg.Role == types.RoleTool {
 			req.Messages[i].ToolName = msg.Name
 		}
 		req.Messages[i].Content = msg.Content.Text
 		if msg.Content.Image != nil {
 			if msg.Content.Image.Url != "" {
-				return nil, provider.ErrParams{Param: "Message.Content.Image", Msg: "ollama api does not support image url message content, use bytes buffer instead"}
+				return nil, providers.ErrParams{Param: "Message.Content.Image", Msg: "ollama api does not support image url message content, use bytes buffer instead"}
 			}
 			req.Messages[i].Images = append(req.Messages[i].Images, api.ImageData(msg.Content.Image.ImageData.Base64))
 		}
 		if msg.Content.Audio != nil {
-			return nil, provider.ErrParams{Param: "Message.Content.Audio", Msg: "ollama api does not support audio message content"}
+			return nil, providers.ErrParams{Param: "Message.Content.Audio", Msg: "ollama api does not support audio message content"}
 		}
 		if len(msg.ToolCalls) > 0 {
 			req.Messages[i].ToolCalls = make([]api.ToolCall, len(msg.ToolCalls))
@@ -92,8 +93,8 @@ func buildChatRequest(o *ollamaProvider, request *provider.Request, options *cha
 		}
 	}
 
-	for i := range request.Tools {
-		ollamaTool := convertTool(&request.Tools[i])
+	for i := range tools {
+		ollamaTool := convertTool(&tools[i])
 		req.Tools = append(req.Tools, ollamaTool)
 	}
 

@@ -4,17 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func (o *openAIProvider) Chat(ctx context.Context, request *provider.Request, options *chat.Options) (response provider.Response, err error) {
-	params, err := buildChatRequest(o.model, request, options)
+func (o *openAIProvider) Chat(ctx context.Context, messages []types.Message, tools []tools.Tool, options *types.Options) (response types.Response, err error) {
+	params, err := buildChatRequest(o.model, messages, tools, options)
 	if err != nil {
 		return response, err
 	}
 
-	logger.Debug("chat.request", "model", o.model, "messages", request.Messages, "tools", request.Tools)
+	logger.Debug("chat.request", "model", o.model, "messages", messages, "tools", tools)
 	start := time.Now()
 	chatCompletion, err := o.client.Chat.Completions.New(ctx, params)
 	totalDuration := time.Since(start)
@@ -27,19 +27,19 @@ func (o *openAIProvider) Chat(ctx context.Context, request *provider.Request, op
 	response.Created = time.Unix(chatCompletion.Created, 0)
 	choice := chatCompletion.Choices[0]
 
-	response.Content = chat.NewTextContent(choice.Message.Content)
+	response.Content = types.NewTextContent(choice.Message.Content)
 	if choice.Message.Audio.Data != "" {
-		response.Content.Audio = &chat.Audio{
+		response.Content.Audio = &types.Audio{
 			Base64: choice.Message.Audio.Data,
 		}
 	}
 	response.Refusal = choice.Message.Refusal
-	response.ToolCalls = make([]chat.ToolCall, len(choice.Message.ToolCalls))
+	response.ToolCalls = make([]types.ToolCall, len(choice.Message.ToolCalls))
 	response.FinishReason = choice.FinishReason
 	response.Metrics = convertMetrics(&chatCompletion.Usage, totalDuration)
 
 	for j, toolCall := range choice.Message.ToolCalls {
-		response.ToolCalls[j] = chat.ToolCall{
+		response.ToolCalls[j] = types.ToolCall{
 			ID:        toolCall.ID,
 			Arguments: toolCall.Function.Arguments,
 			Name:      toolCall.Function.Name,

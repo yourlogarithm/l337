@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider/openai"
+	"github.com/yourlogarithm/l337/providers/openai"
+	"github.com/yourlogarithm/l337/types"
 )
 
 func AgentExample() {
@@ -28,7 +28,7 @@ func AgentExample() {
 
 	response, err := agent.RunWithParams(
 		context.Background(),
-		chat.WithTextMessage(chat.RoleUser, "What was your greatest failure, and what did you learn from it?"),
+		types.WithTextMessage(types.RoleUser, "What was your greatest failure, and what did you learn from it?"),
 	)
 	if err != nil {
 		panic(err)

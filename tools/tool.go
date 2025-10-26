@@ -2,13 +2,12 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/invopop/jsonschema"
-	"github.com/yourlogarithm/l337/chat"
+	"github.com/yourlogarithm/l337/types"
 )
 
 type Tool struct {
@@ -20,30 +19,12 @@ type Tool struct {
 	callable ToolCallable `json:"-"`
 }
 
-func (t Tool) Call(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
-	return t.callable(ctx, runResponse, rawArguments)
-}
-
-type ToolCallable func(ctx context.Context, runResponse *chat.RunResponse, rawArguments string) ([]chat.Content, error)
-
-type ToolCallableTyped[T any] func(context.Context, *chat.RunResponse, T) ([]chat.Content, error)
-
-func wrapCallable[T any](fn ToolCallableTyped[T]) ToolCallable {
-	return func(ctx context.Context, response *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
-		var args T
-		if err := json.Unmarshal([]byte(rawArguments), &args); err != nil {
-			return nil, err
-		}
-		return fn(ctx, response, args)
-	}
-}
-
 // Declare tool that does not require any arguments
-func New(name, description string, callable func(ctx context.Context) ([]chat.Content, error)) Tool {
+func New(name, description string, callable func(ctx context.Context) ([]types.Content, error)) Tool {
 	return Tool{
 		Name:        name,
 		Description: description,
-		callable: func(ctx context.Context, response *chat.RunResponse, rawArguments string) ([]chat.Content, error) {
+		callable: func(ctx context.Context, response *types.Run, rawArguments string) ([]types.Content, error) {
 			return callable(ctx)
 		},
 	}
@@ -79,4 +60,8 @@ func NewWithArgs[T any](name, description string, callable ToolCallableTyped[T])
 		Parameters:  schema,
 		callable:    wrapCallable(callable),
 	}, nil
+}
+
+func (t Tool) Call(ctx context.Context, run *types.Run, rawArguments string) ([]types.Content, error) {
+	return t.callable(ctx, run, rawArguments)
 }

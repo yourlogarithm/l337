@@ -5,9 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/providers"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 type AgentOption interface {
@@ -18,7 +18,7 @@ type AgentOptionFunc func(*Agent) error
 
 func (s AgentOptionFunc) Apply(r *Agent) error { return s(r) }
 
-func New(model *provider.Model, options ...AgentOption) (*Agent, error) {
+func New(model *providers.Model, options ...AgentOption) (*Agent, error) {
 	defaultID := uuid.New()
 
 	agent := &Agent{
@@ -103,7 +103,7 @@ func WithSubordinate(subordinate AgentImpl) AgentOption {
 	})
 }
 
-func WithChatOptions(chatOptions chat.Options) AgentOption {
+func WithChatOptions(chatOptions types.Options) AgentOption {
 	return AgentOptionFunc(func(a *Agent) error {
 		a.chatOptions = chatOptions
 		return nil

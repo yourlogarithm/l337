@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/streaming"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 func TestAgent_RunStreaming_NilModelError(t *testing.T) {
@@ -30,13 +30,13 @@ func TestAgent_RunStreaming_EmptyMessagesError(t *testing.T) {
 
 func TestAgent_RunStreaming_ChatStreamingErrorSendAndReturn(t *testing.T) {
 	model := MockModel{
-		ChatStreamingFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.ResponseChannel, error) {
+		ChatStreamingFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (streaming.ResponseChannel, error) {
 			return nil, assert.AnError
 		},
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithTextMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, types.WithTextMessage(types.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	chunk, err := channel.Next()
@@ -49,11 +49,11 @@ func TestAgent_RunStreaming_ChatStreamingErrorSendAndReturn(t *testing.T) {
 
 func TestAgent_RunStreaming_StreamErr(t *testing.T) {
 	model := MockModel{
-		ChatStreamingFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.ResponseChannel, error) {
-			ch := provider.NewResponseChannel(1)
+		ChatStreamingFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (streaming.ResponseChannel, error) {
+			ch := streaming.NewResponseChannel(1)
 			go func() {
 				defer ch.Close()
-				ch.Send(&provider.Response{Content: chat.NewTextContent("Hello")})
+				ch.Send(&types.Response{Content: types.NewTextContent("Hello")})
 				ch.SendErr(assert.AnError)
 			}()
 			return ch, nil
@@ -61,12 +61,12 @@ func TestAgent_RunStreaming_StreamErr(t *testing.T) {
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithTextMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, types.WithTextMessage(types.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	chunk, err := channel.Next()
 	assert.NoError(t, err)
-	assert.Equal(t, chat.NewTextContent("Hello"), chunk.Content)
+	assert.Equal(t, types.NewTextContent("Hello"), chunk.Content)
 
 	_, err = channel.Next()
 	assert.Equal(t, assert.AnError, err)
@@ -77,36 +77,36 @@ func TestAgent_RunStreaming_StreamErr(t *testing.T) {
 
 func TestAgent_RunStreaming_AddChunkError(t *testing.T) {
 	model := MockModel{
-		ChatStreamingFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.ResponseChannel, error) {
-			ch := provider.NewResponseChannel(1)
+		ChatStreamingFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (streaming.ResponseChannel, error) {
+			ch := streaming.NewResponseChannel(1)
 			go func() {
 				defer ch.Close()
-				ch.Send(&provider.Response{ID: "a", Content: chat.NewTextContent("Hello")})
-				ch.Send(&provider.Response{ID: "b", Content: chat.NewTextContent("World")})
+				ch.Send(&types.Response{ID: "a", Content: types.NewTextContent("Hello")})
+				ch.Send(&types.Response{ID: "b", Content: types.NewTextContent("World")})
 			}()
 			return ch, nil
 		},
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, chat.WithTextMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 1, types.WithTextMessage(types.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	chunk, err := channel.Next()
 	assert.NoError(t, err)
-	assert.Equal(t, chat.NewTextContent("Hello"), chunk.Content)
+	assert.Equal(t, types.NewTextContent("Hello"), chunk.Content)
 
 	_, err = channel.Next()
 	assert.Error(t, err)
 
-	errChunkAddition, ok := err.(provider.ErrChunkAddition)
+	errChunkAddition, ok := err.(streaming.ErrChunkAddition)
 	assert.True(t, ok)
 
 	assert.Equal(t, "a", errChunkAddition.Accumulator.ID)
-	assert.Equal(t, chat.NewTextContent("Hello"), errChunkAddition.Accumulator.Content)
+	assert.Equal(t, types.NewTextContent("Hello"), errChunkAddition.Accumulator.Content)
 
 	assert.Equal(t, "b", errChunkAddition.Chunk.ID)
-	assert.Equal(t, chat.NewTextContent("World"), errChunkAddition.Chunk.Content)
+	assert.Equal(t, types.NewTextContent("World"), errChunkAddition.Chunk.Content)
 
 	_, err = channel.Next()
 	assert.Equal(t, io.EOF, err)
@@ -114,20 +114,20 @@ func TestAgent_RunStreaming_AddChunkError(t *testing.T) {
 
 func TestAgent_RunStreaming_AccumulateUntilEOF(t *testing.T) {
 	model := MockModel{
-		ChatStreamingFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.ResponseChannel, error) {
-			ch := provider.NewResponseChannel(0)
+		ChatStreamingFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (streaming.ResponseChannel, error) {
+			ch := streaming.NewResponseChannel(0)
 			go func() {
 				defer ch.Close()
-				ch.Send(&provider.Response{Content: chat.NewTextContent("Hello")})
-				ch.Send(&provider.Response{Content: chat.NewTextContent(" ")})
-				ch.Send(&provider.Response{Content: chat.NewTextContent("World"), FinishReason: "stop"})
+				ch.Send(&types.Response{Content: types.NewTextContent("Hello")})
+				ch.Send(&types.Response{Content: types.NewTextContent(" ")})
+				ch.Send(&types.Response{Content: types.NewTextContent("World"), FinishReason: "stop"})
 			}()
 			return ch, nil
 		},
 	}
 	agentInstance, _ := agent.New(model.Wrap())
 
-	runResponse, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, chat.WithTextMessage(chat.RoleUser, "Hello"))
+	run, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, types.WithTextMessage(types.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	var accumulated string
@@ -141,10 +141,10 @@ func TestAgent_RunStreaming_AccumulateUntilEOF(t *testing.T) {
 	}
 
 	assert.Equal(t, "Hello World", accumulated)
-	assert.Equal(t, 2, len(runResponse.Messages))
-	assert.Equal(t, chat.Message{Role: chat.RoleUser, Content: chat.NewTextContent("Hello")}, runResponse.Messages[0])
-	assert.Equal(t, chat.Message{Role: chat.RoleAssistant, Content: chat.NewTextContent("Hello World")}, runResponse.Messages[1])
-	assert.Equal(t, 1, len(runResponse.Metrics))
+	assert.Equal(t, 2, len(run.Messages))
+	assert.Equal(t, types.Message{Role: types.RoleUser, Content: types.NewTextContent("Hello")}, run.Messages[0])
+	assert.Equal(t, types.Message{Role: types.RoleAssistant, Content: types.NewTextContent("Hello World")}, run.Messages[1])
+	assert.Equal(t, 1, len(run.Metrics))
 }
 
 func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
@@ -152,15 +152,15 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 	chatCalls := 0
 
 	model := MockModel{
-		ChatStreamingFunc: func(ctx context.Context, req *provider.Request, opts *chat.Options) (provider.ResponseChannel, error) {
+		ChatStreamingFunc: func(ctx context.Context, messages []types.Message, tools []tools.Tool, opts *types.Options) (streaming.ResponseChannel, error) {
 			chatCalls++
-			ch := provider.NewResponseChannel(0)
+			ch := streaming.NewResponseChannel(0)
 			go func() {
 				defer ch.Close()
 				if chatCalls > 3 {
-					ch.Send(&provider.Response{Content: chat.NewTextContent("Final response"), FinishReason: "stop"})
+					ch.Send(&types.Response{Content: types.NewTextContent("Final response"), FinishReason: "stop"})
 				} else {
-					toolCalls := []chat.ToolCall{
+					toolCalls := []types.ToolCall{
 						{
 							ID:        "test_tool#0",
 							Name:      "test_tool",
@@ -177,9 +177,9 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 						},
 					}
 					for _, toolCall := range toolCalls {
-						ch.Send(&provider.Response{ToolCalls: []chat.ToolCall{toolCall}})
+						ch.Send(&types.Response{ToolCalls: []types.ToolCall{toolCall}})
 					}
-					ch.Send(&provider.Response{FinishReason: "tool_call"})
+					ch.Send(&types.Response{FinishReason: "tool_call"})
 				}
 			}()
 			return ch, nil
@@ -190,9 +190,9 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 		Input string `json:"input"`
 	}
 
-	callable := func(ctx context.Context, response *chat.RunResponse, arg arg) ([]chat.Content, error) {
+	callable := func(ctx context.Context, run *types.Run, arg arg) ([]types.Content, error) {
 		functionCalls++
-		return chat.NewTextContent(arg.Input).AsSlice(), nil
+		return types.NewTextContent(arg.Input).AsSlice(), nil
 	}
 
 	tool, err := tools.NewWithArgs("test_tool", "A test tool", callable)
@@ -200,7 +200,7 @@ func TestAgent_RunStreaming_ContinueUntilNoToolsCalled(t *testing.T) {
 
 	agentInstance, _ := agent.New(model.Wrap(), agent.WithTool(tool))
 
-	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, chat.WithTextMessage(chat.RoleUser, "Hello"))
+	_, channel, err := agentInstance.RunStreamingWithParams(t.Context(), 0, types.WithTextMessage(types.RoleUser, "Hello"))
 	assert.NoError(t, err)
 
 	channel.Drain()

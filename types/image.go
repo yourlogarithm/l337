@@ -1,4 +1,4 @@
-package chat
+package types
 
 type ImageDetailLevel string
 

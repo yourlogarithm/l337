@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/metrics"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 const DELEGATE_TASK_TOOL_NAME = "delegate_task"
@@ -29,7 +29,7 @@ func addDelegateTaskTool(agent *Agent) error {
 		}
 	}
 
-	delegateTask := func(ctx context.Context, response *chat.RunResponse, delegateTaskParams delegateTaskParams) ([]chat.Content, error) {
+	delegateTask := func(ctx context.Context, run *types.Run, delegateTaskParams delegateTaskParams) ([]types.Content, error) {
 		logger.Debug(DELEGATE_TASK_TOOL_NAME, "params", delegateTaskParams)
 
 		if len(delegateTaskParams.Names) == 0 {
@@ -45,14 +45,14 @@ func addDelegateTaskTool(agent *Agent) error {
 			nameSet[name] = struct{}{}
 		}
 
-		msg := chat.Message{
-			Role:    chat.RoleUser,
-			Content: chat.NewTextContent(delegateTaskParams.ExpectedOutput),
+		msg := types.Message{
+			Role:    types.RoleUser,
+			Content: types.NewTextContent(delegateTaskParams.ExpectedOutput),
 		}
 
 		var wg sync.WaitGroup
 
-		responses := make([]chat.Content, 0, len(delegateTaskParams.Names))
+		responses := make([]types.Content, 0, len(delegateTaskParams.Names))
 
 		for i := range agent.subordinates {
 			name, err := agent.subordinates[i].Name()
@@ -63,23 +63,23 @@ func addDelegateTaskTool(agent *Agent) error {
 				wg.Add(1)
 				go func(sub AgentImpl, name string) {
 					defer wg.Done()
-					subordinateRunResponse := &chat.RunResponse{
-						SessionID: response.SessionID,
-						Messages:  []chat.Message{msg},
+					subordinateRun := &types.Run{
+						SessionID: run.SessionID,
+						Messages:  []types.Message{msg},
 						Metrics:   make(map[uuid.UUID][]metrics.Metrics),
 					}
-					err := sub.Run(ctx, subordinateRunResponse)
-					for id, metrics := range subordinateRunResponse.Metrics {
-						if v, ok := response.Metrics[id]; ok {
-							response.Metrics[id] = append(v, metrics...)
+					err := sub.Run(ctx, subordinateRun)
+					for id, metrics := range subordinateRun.Metrics {
+						if v, ok := run.Metrics[id]; ok {
+							run.Metrics[id] = append(v, metrics...)
 						} else {
-							response.Metrics[id] = metrics
+							run.Metrics[id] = metrics
 						}
 					}
 					if err != nil {
-						responses = append(responses, chat.NewTextContent(fmt.Sprintf("(%s) Error: %s", name, err.Error())))
+						responses = append(responses, types.NewTextContent(fmt.Sprintf("(%s) Error: %s", name, err.Error())))
 					} else {
-						responses = append(responses, subordinateRunResponse.Content())
+						responses = append(responses, subordinateRun.Content())
 					}
 				}(agent.subordinates[i], name)
 			}

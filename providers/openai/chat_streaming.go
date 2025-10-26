@@ -5,24 +5,26 @@ import (
 	"errors"
 	"time"
 
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/streaming"
+	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 func (o *openAIProvider) ChatStreaming(
 	ctx context.Context,
-	request *provider.Request,
-	options *chat.Options,
-) (provider.ResponseChannel, error) {
-	params, err := buildChatRequest(o.model, request, options)
+	messages []types.Message,
+	tools []tools.Tool,
+	options *types.Options,
+) (streaming.ResponseChannel, error) {
+	params, err := buildChatRequest(o.model, messages, tools, options)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debug("chat.request.stream", "model", o.model, "messages", request.Messages, "tools", request.Tools)
+	logger.Debug("chat.request.stream", "model", o.model, "messages", messages, "tools", tools)
 
 	openaiStream := o.client.Chat.Completions.NewStreaming(ctx, params)
-	channel := provider.NewResponseChannel(options.StreamingBufferSize)
+	channel := streaming.NewResponseChannel(options.StreamingBufferSize)
 
 	go func() {
 		defer channel.Close()
@@ -35,7 +37,7 @@ func (o *openAIProvider) ChatStreaming(
 				channel.SendErr(errors.New("no choices in response"))
 				return
 			} else if len(chunk.Choices) == 0 {
-				response := provider.Response{
+				response := types.Response{
 					Metrics: convertMetrics(&chunk.Usage, time.Since(start)),
 				}
 				channel.Send(&response)
@@ -43,16 +45,16 @@ func (o *openAIProvider) ChatStreaming(
 			}
 
 			choice := chunk.Choices[0]
-			response := provider.Response{
+			response := types.Response{
 				ID:      chunk.ID,
 				Created: time.Unix(chunk.Created, 0),
-				Content: chat.NewTextContent(choice.Delta.Content),
+				Content: types.NewTextContent(choice.Delta.Content),
 				Refusal: choice.Delta.Refusal,
 				// Reasoning:    choice.Delta.ReasoningContent,
 				FinishReason: choice.FinishReason,
 			}
 			for _, toolCall := range choice.Delta.ToolCalls {
-				tc := chat.ToolCall{
+				tc := types.ToolCall{
 					ID:        toolCall.ID,
 					Name:      toolCall.Function.Name,
 					Arguments: toolCall.Function.Arguments,

@@ -1,4 +1,4 @@
-package chat
+package types
 
 import "encoding/base64"
 

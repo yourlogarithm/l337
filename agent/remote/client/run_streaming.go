@@ -10,12 +10,12 @@ import (
 	"strings"
 
 	"github.com/yourlogarithm/l337/agent"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/streaming"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func (c *RemoteAgent) RunStreaming(ctx context.Context, runResponse *chat.RunResponse, bufferSize int) (provider.ResponseChannel, error) {
-	body, err := json.Marshal(runResponse)
+func (c *RemoteAgent) RunStreaming(ctx context.Context, run *types.Run, bufferSize int) (streaming.ResponseChannel, error) {
+	body, err := json.Marshal(run)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (c *RemoteAgent) RunStreaming(ctx context.Context, runResponse *chat.RunRes
 		return nil, err
 	}
 
-	ch := provider.NewResponseChannel(bufferSize)
+	ch := streaming.NewResponseChannel(bufferSize)
 
 	go func() {
 		defer close(ch)
@@ -76,7 +76,7 @@ func (c *RemoteAgent) RunStreaming(ctx context.Context, runResponse *chat.RunRes
 
 			switch event {
 			case "chunk":
-				var responseChunk provider.ResponseChunkMarshalable
+				var responseChunk streaming.ChunkMarshalable
 				if err := json.Unmarshal([]byte(data), &responseChunk); err != nil {
 					ch.SendErr(err)
 					return
@@ -88,7 +88,7 @@ func (c *RemoteAgent) RunStreaming(ctx context.Context, runResponse *chat.RunRes
 					ch.Send(responseChunk.Chunk)
 				}
 			case "response":
-				if err := json.Unmarshal([]byte(data), runResponse); err != nil {
+				if err := json.Unmarshal([]byte(data), run); err != nil {
 					ch.SendErr(err)
 					return
 				}
@@ -102,11 +102,11 @@ func (c *RemoteAgent) RunStreaming(ctx context.Context, runResponse *chat.RunRes
 	return ch, nil
 }
 
-func (c *RemoteAgent) RunStreamingWithParams(ctx context.Context, bufferSize int, params ...chat.Parameter) (*chat.RunResponse, provider.ResponseChannel, error) {
-	runResponse, err := agent.BuildRunResponse(params...)
+func (c *RemoteAgent) RunStreamingWithParams(ctx context.Context, bufferSize int, params ...types.Parameter) (*types.Run, streaming.ResponseChannel, error) {
+	run, err := agent.BuildRun(params...)
 	if err != nil {
 		return nil, nil, err
 	}
-	stream, err := c.RunStreaming(ctx, runResponse, bufferSize)
-	return runResponse, stream, err
+	stream, err := c.RunStreaming(ctx, run, bufferSize)
+	return run, stream, err
 }

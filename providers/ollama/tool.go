@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/ollama/ollama/api"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 func convertTool(t *tools.Tool) api.Tool {
@@ -38,12 +38,12 @@ func convertTool(t *tools.Tool) api.Tool {
 	}
 }
 
-func convertToolCall(toolCall *api.ToolCall) (chat.ToolCall, error) {
+func convertToolCall(toolCall *api.ToolCall) (types.ToolCall, error) {
 	rawArguments, err := json.Marshal(toolCall.Function.Arguments)
 	if err != nil {
-		return chat.ToolCall{}, err
+		return types.ToolCall{}, err
 	}
-	return chat.ToolCall{
+	return types.ToolCall{
 		ID:        strconv.Itoa(toolCall.Function.Index),
 		Arguments: string(rawArguments),
 		Name:      toolCall.Function.Name,

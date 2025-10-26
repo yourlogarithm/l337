@@ -1,13 +1,13 @@
-package provider
+package streaming
 
-import "github.com/yourlogarithm/l337/chat"
+import "github.com/yourlogarithm/l337/types"
 
 type ContentAccumulator struct {
-	Response        Response
-	toolCallsLookup map[string]*chat.ToolCall
+	Response        types.Response
+	toolCallsLookup map[string]*types.ToolCall
 }
 
-func (acc *ContentAccumulator) AddChunk(chunk *Response) error {
+func (acc *ContentAccumulator) AddChunk(chunk *types.Response) error {
 	if acc.Response.ID == "" {
 		acc.Response.ID = chunk.ID
 	} else if acc.Response.ID != chunk.ID && chunk.ID != "" {
@@ -42,7 +42,7 @@ func (acc *ContentAccumulator) AddChunk(chunk *Response) error {
 
 func NewContentAccumulator() ContentAccumulator {
 	return ContentAccumulator{
-		toolCallsLookup: make(map[string]*chat.ToolCall),
+		toolCallsLookup: make(map[string]*types.ToolCall),
 	}
 }
 

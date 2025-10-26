@@ -4,29 +4,29 @@ import (
 	"context"
 	"io"
 
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/streaming"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func (a *Agent) RunStreamingWithParams(ctx context.Context, bufferSize int, params ...chat.Parameter) (*chat.RunResponse, provider.ResponseChannel, error) {
-	runResponse, err := BuildRunResponse(params...)
+func (a *Agent) RunStreamingWithParams(ctx context.Context, bufferSize int, params ...types.Parameter) (*types.Run, streaming.ResponseChannel, error) {
+	run, err := BuildRun(params...)
 	if err != nil {
 		return nil, nil, err
 	}
-	channel, err := a.RunStreaming(ctx, runResponse, bufferSize)
-	return runResponse, channel, err
+	channel, err := a.RunStreaming(ctx, run, bufferSize)
+	return run, channel, err
 }
 
-func (a *Agent) RunStreaming(ctx context.Context, runResponse *chat.RunResponse, bufferSize int) (provider.ResponseChannel, error) {
-	tools, err := a.preRun(runResponse)
+func (a *Agent) RunStreaming(ctx context.Context, run *types.Run, bufferSize int) (streaming.ResponseChannel, error) {
+	tools, err := a.preRun(run)
 	if err != nil {
 		return nil, err
 	}
 
-	channel := provider.NewResponseChannel(bufferSize)
+	channel := streaming.NewResponseChannel(bufferSize)
 
-	go a.scheduleChunkProcessing(ctx, tools, runResponse, channel)
+	go a.scheduleChunkProcessing(ctx, tools, run, channel)
 
 	return channel, nil
 }
@@ -34,24 +34,20 @@ func (a *Agent) RunStreaming(ctx context.Context, runResponse *chat.RunResponse,
 func (a *Agent) scheduleChunkProcessing(
 	ctx context.Context,
 	tools []tools.Tool,
-	runResponse *chat.RunResponse,
-	responseChannel provider.ResponseChannel,
+	run *types.Run,
+	responseChannel streaming.ResponseChannel,
 ) {
 	defer responseChannel.Close()
 
 	for {
-		req := provider.Request{
-			Messages: runResponse.Messages,
-			Tools:    tools,
-		}
-		logger.Debug("agent.run.request", "agent", a.name, "request", req)
-		stream, err := a.model.Impl.ChatStreaming(ctx, &req, &a.chatOptions)
+		logger.Debug("agent.run.request", "agent", a.name, "messages", run.Messages, "tools", tools)
+		stream, err := a.model.Impl.ChatStreaming(ctx, run.Messages, tools, &a.chatOptions)
 		if err != nil {
 			responseChannel.SendErr(err)
 			return
 		}
 
-		acc := provider.NewContentAccumulator()
+		acc := streaming.NewContentAccumulator()
 		for {
 			chunk, err := stream.Next()
 			if err == io.EOF {
@@ -67,7 +63,7 @@ func (a *Agent) scheduleChunkProcessing(
 			responseChannel.Send(chunk)
 		}
 
-		toolsCalled, err := a.handleResponse(ctx, runResponse, &acc.Response)
+		toolsCalled, err := a.handleResponse(ctx, run, &acc.Response)
 		if err != nil {
 			responseChannel.SendErr(err)
 			return

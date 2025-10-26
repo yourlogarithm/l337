@@ -2,10 +2,10 @@ package agent
 
 import (
 	"github.com/google/uuid"
-	"github.com/yourlogarithm/l337/chat"
 	"github.com/yourlogarithm/l337/internal/logging"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/providers"
 	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 var logger = logging.SetupLogger("agent")
@@ -27,7 +27,7 @@ type Agent struct {
 	// Wrapped in <expected_output> tags
 	expectedOutput string
 	// Model used to send LLM requests
-	model *provider.Model
+	model *providers.Model
 	// Tools for the LLM to use
 	tools tools.Toolkit
 	// Retry options for the LLM requests
@@ -35,7 +35,7 @@ type Agent struct {
 	// retry *retry.Options
 	// List of subordinate agents that this agent can delegate tasks to
 	subordinates []AgentImpl
-	chatOptions  chat.Options
+	chatOptions  types.Options
 }
 
 func (a *Agent) Name() (string, error) {

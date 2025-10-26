@@ -4,22 +4,24 @@ import (
 	"context"
 
 	"github.com/ollama/ollama/api"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/streaming"
+	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
 func (o *ollamaProvider) ChatStreaming(
 	ctx context.Context,
-	request *provider.Request,
-	options *chat.Options,
-) (provider.ResponseChannel, error) {
-	req, err := buildChatRequest(o, request, options, true)
+	messages []types.Message,
+	tools []tools.Tool,
+	options *types.Options,
+) (streaming.ResponseChannel, error) {
+	req, err := buildChatRequest(o, messages, tools, options, true)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debug("chat.request.stream", "model", o.model, "messages", request.Messages, "tools", request.Tools)
-	channel := provider.NewResponseChannel(options.StreamingBufferSize)
+	logger.Debug("chat.request.stream", "model", o.model, "messages", messages, "tools", tools)
+	channel := streaming.NewResponseChannel(options.StreamingBufferSize)
 
 	go func() {
 		defer channel.Close()
@@ -27,11 +29,11 @@ func (o *ollamaProvider) ChatStreaming(
 		ollamaCallback := func(ollamaResp api.ChatResponse) error {
 			logger.Debug("chat.response.stream", "model", o.model, "response", ollamaResp)
 
-			response := provider.Response{
+			response := types.Response{
 				Created:      ollamaResp.CreatedAt,
 				FinishReason: ollamaResp.DoneReason,
 				Reasoning:    ollamaResp.Message.Thinking,
-				Content:      chat.NewTextContent(ollamaResp.Message.Content),
+				Content:      types.NewTextContent(ollamaResp.Message.Content),
 				Metrics:      convertMetrics(&ollamaResp.Metrics),
 			}
 

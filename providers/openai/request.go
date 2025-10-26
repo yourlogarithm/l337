@@ -7,15 +7,16 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/packages/param"
 	"github.com/openai/openai-go/shared"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/providers"
+	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func buildChatRequest(model string, request *provider.Request, options *chat.Options) (openai.ChatCompletionNewParams, error) {
+func buildChatRequest(model string, messages []types.Message, tools []tools.Tool, options *types.Options) (openai.ChatCompletionNewParams, error) {
 	params := openai.ChatCompletionNewParams{
-		Messages:         make([]openai.ChatCompletionMessageParamUnion, 0, len(request.Messages)),
+		Messages:         make([]openai.ChatCompletionMessageParamUnion, 0, len(messages)),
 		Model:            model,
-		Tools:            make([]openai.ChatCompletionToolParam, 0, len(request.Tools)),
+		Tools:            make([]openai.ChatCompletionToolParam, 0, len(tools)),
 		Logprobs:         param.NewOpt(options.Logprobs),
 		PresencePenalty:  param.NewOpt(options.PresencePenalty),
 		PromptCacheKey:   param.NewOpt(options.PromptCacheKey),
@@ -49,7 +50,7 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 		if level, ok := options.ReasoningEffort.AsLevel(); ok {
 			params.ReasoningEffort = shared.ReasoningEffort(level)
 		} else {
-			return params, provider.ErrParams{Param: "ReasoningEffort", Msg: fmt.Sprintf("invalid reasoning effort: %v", options.ReasoningEffort)}
+			return params, providers.ErrParams{Param: "ReasoningEffort", Msg: fmt.Sprintf("invalid reasoning effort: %v", options.ReasoningEffort)}
 		}
 	}
 	if options.MaxTokens > 0 {
@@ -81,29 +82,29 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 		params.StreamOptions.IncludeUsage = param.NewOpt(true)
 	}
 
-	for _, msg := range request.Messages {
+	for _, msg := range messages {
 		var openaiMsg openai.ChatCompletionMessageParamUnion
 		var nameParam *param.Opt[string]
 		switch msg.Role {
-		case chat.RoleDeveloper:
+		case types.RoleDeveloper:
 			developerMsg := openai.ChatCompletionDeveloperMessageParam{}
 			if msg.Content.Text != "" {
 				developerMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			} else {
-				return params, provider.ErrParams{Param: "Message.Content", Msg: "developer messages must have non-empty text content"}
+				return params, providers.ErrParams{Param: "Message.Content", Msg: "developer messages must have non-empty text content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfDeveloper: &developerMsg}
 			nameParam = &openaiMsg.OfDeveloper.Name
-		case chat.RoleSystem:
+		case types.RoleSystem:
 			systemMsg := openai.ChatCompletionSystemMessageParam{}
 			if msg.Content.Text != "" {
 				systemMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			} else {
-				return params, provider.ErrParams{Param: "Message.Content", Msg: "system messages must have non-empty text content"}
+				return params, providers.ErrParams{Param: "Message.Content", Msg: "system messages must have non-empty text content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfSystem: &systemMsg}
 			nameParam = &openaiMsg.OfSystem.Name
-		case chat.RoleUser:
+		case types.RoleUser:
 			userMsg := openai.ChatCompletionUserMessageParam{}
 			if msg.Content.Text != "" {
 				userMsg.Content.OfString = param.NewOpt(msg.Content.Text)
@@ -135,16 +136,16 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 					},
 				})
 			} else {
-				return params, provider.ErrParams{Param: "Message.Content", Msg: "user messages must have non-empty text, audio, or image content"}
+				return params, providers.ErrParams{Param: "Message.Content", Msg: "user messages must have non-empty text, audio, or image content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfUser: &userMsg}
 			nameParam = &openaiMsg.OfUser.Name
-		case chat.RoleAssistant:
+		case types.RoleAssistant:
 			assistantMsg := openai.ChatCompletionAssistantMessageParam{}
 			if msg.Content.Text != "" {
 				assistantMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			} else {
-				return params, provider.ErrParams{Param: "Message.Content", Msg: "assistant messages must have non-empty text content"}
+				return params, providers.ErrParams{Param: "Message.Content", Msg: "assistant messages must have non-empty text content"}
 			}
 			if len(msg.ToolCalls) > 0 {
 				assistantMsg.ToolCalls = make([]openai.ChatCompletionMessageToolCallParam, len(msg.ToolCalls))
@@ -154,18 +155,18 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfAssistant: &assistantMsg}
 			nameParam = &openaiMsg.OfAssistant.Name
-		case chat.RoleTool:
+		case types.RoleTool:
 			toolMsg := openai.ChatCompletionToolMessageParam{
 				ToolCallID: msg.Name,
 			}
 			if msg.Content.Text != "" {
 				toolMsg.Content.OfString = param.NewOpt(msg.Content.Text)
 			} else {
-				return params, provider.ErrParams{Param: "Message.Content", Msg: "tool messages must have non-empty text content"}
+				return params, providers.ErrParams{Param: "Message.Content", Msg: "tool messages must have non-empty text content"}
 			}
 			openaiMsg = openai.ChatCompletionMessageParamUnion{OfTool: &toolMsg}
 		default:
-			return params, provider.ErrUnknownRole{Role: msg.Role.String()}
+			return params, providers.ErrParams{Param: "Message.Role", Msg: msg.Role.String()}
 		}
 		if msg.Name != "" && nameParam != nil {
 			*nameParam = param.NewOpt(msg.Name)
@@ -173,8 +174,8 @@ func buildChatRequest(model string, request *provider.Request, options *chat.Opt
 		params.Messages = append(params.Messages, openaiMsg)
 	}
 
-	for i := range request.Tools {
-		params.Tools = append(params.Tools, convertTool(&request.Tools[i]))
+	for i := range tools {
+		params.Tools = append(params.Tools, convertTool(&tools[i]))
 	}
 
 	return params, nil

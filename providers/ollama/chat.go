@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/ollama/ollama/api"
-	"github.com/yourlogarithm/l337/chat"
-	"github.com/yourlogarithm/l337/provider"
+	"github.com/yourlogarithm/l337/tools"
+	"github.com/yourlogarithm/l337/types"
 )
 
-func (o *ollamaProvider) Chat(ctx context.Context, request *provider.Request, options *chat.Options) (response provider.Response, err error) {
-	req, err := buildChatRequest(o, request, options, false)
+func (o *ollamaProvider) Chat(ctx context.Context, messages []types.Message, tools []tools.Tool, options *types.Options) (response types.Response, err error) {
+	req, err := buildChatRequest(o, messages, tools, options, false)
 	if err != nil {
 		return response, err
 	}
@@ -20,7 +20,7 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *provider.Request, op
 		response.Created = ollamaResp.CreatedAt
 		response.FinishReason = ollamaResp.DoneReason
 		response.Reasoning = ollamaResp.Message.Thinking
-		response.Content = chat.NewTextContent(ollamaResp.Message.Content)
+		response.Content = types.NewTextContent(ollamaResp.Message.Content)
 		response.Metrics = convertMetrics(&ollamaResp.Metrics)
 
 		for _, toolCall := range ollamaResp.Message.ToolCalls {
@@ -34,10 +34,10 @@ func (o *ollamaProvider) Chat(ctx context.Context, request *provider.Request, op
 		return nil
 	}
 
-	logger.Debug("chat.request", "model", o.model, "messages", request.Messages, "tools", request.Tools)
+	logger.Debug("chat.request", "model", o.model, "messages", messages, "tools", tools)
 	if err = o.client.Chat(ctx, req, callback); err != nil {
 		logger.Error("chat.response", "model", o.model, "error", err)
-		return provider.Response{}, err
+		return types.Response{}, err
 	}
 
 	return response, nil

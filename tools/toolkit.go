@@ -1,6 +1,5 @@
 package tools
 
-// Helper map for managing tools.
 type Toolkit map[string]Tool
 
 func (t *Toolkit) Get(name string) (Tool, bool) {
