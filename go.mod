@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/invopop/jsonschema v0.13.0
 	github.com/modelcontextprotocol/go-sdk v1.0.0
-	github.com/ollama/ollama v0.12.3
+	github.com/ollama/ollama v0.12.6
 	github.com/openai/openai-go v1.12.0
 	github.com/stretchr/testify v1.11.1
 	github.com/xeipuuv/gojsonschema v1.2.0
